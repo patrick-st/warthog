@@ -1,11 +1,11 @@
 package org.warthog.pbl.datastructures
 
-/**
- *  Trait for a pseudo-boolean constraint
- */
-trait PBLConstraint {
-  val terms: List[PBLTerm]
-  val degree: BigInt
 
-  
+/**
+ * Representation of a pseudo-boolean constraint
+ * @param terms terms of the left-hand side
+ * @param degree the right-hand side
+ */
+class PBLConstraint(terms: List[PBLTerm], degree: BigInt) extends Constraint(terms, degree){
+
 }
