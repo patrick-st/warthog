@@ -5,9 +5,15 @@ package org.warthog.pbl.datastructures
  *  and cardinality constraints
  *  Form of a pseudo-boolean constraint: a_1x_1 + a_2x_2 + ... + a_nx_n >= degree
  *  Form of a cardinality constraint: x_1 + x_2 + x_3 + ... + x_n >= degree
+ *  Note that all constraints are normalized which means:
+ *  - all coefficients a_i > 0
+ *  - degree > 0
+ *  - relational operator: >=
  */
 abstract class Constraint (){
+  //left-hand side of the constraint
   var terms :  List[PBLTerm]
+  //right-hand side of the constraint
   var degree : BigInt
   normalize()
 
@@ -16,8 +22,17 @@ abstract class Constraint (){
     this.terms = terms
     this.degree = degree
   }
+
+  /**
+   * String representation of the constraint
+   * @return the string representation
+   */
   override def toString = terms.map(_.toString()+ " + ").foldLeft("")(_+_).dropRight(2) + ">= " + degree
 
+  /**
+   * Normalize the constraint by eliminating all negative coefficients
+   *
+   */
   def normalize() = {
     terms.map { t =>
       if (t.a < 0) {

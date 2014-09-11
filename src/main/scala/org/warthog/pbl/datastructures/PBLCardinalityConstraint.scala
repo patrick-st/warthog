@@ -8,11 +8,13 @@ package org.warthog.pbl.datastructures
 class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) extends Constraint(terms, degree){
   reduceCoefficients()
 
+  /**
+   * Reduce all coefficients to 1 and adapts the degree accordingly
+   */
   def reduceCoefficients() = {
     val coeff = terms(0).a
     terms.map(_.a = BigInt(1))
     val tuple = (degree /% coeff)
     degree =  if (tuple._2 == 0) tuple._1 else tuple._1 + 1
-
   }
 }
