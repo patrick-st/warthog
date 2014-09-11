@@ -5,6 +5,14 @@ package org.warthog.pbl.datastructures
  * @param terms left-hand side of the constraint
  * @param degree right-hand side of the constraint
  */
-class PBLCardinalityConstraint(terms: List[PBLTerm], degree: BigInt) extends Constraint(terms, degree){
+class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) extends Constraint(terms, degree){
+  reduceCoefficients()
 
+  def reduceCoefficients() = {
+    val coeff = terms(0).a
+    terms.map(_.a = BigInt(1))
+    val tuple = (degree /% coeff)
+    degree =  if (tuple._2 == 0) tuple._1 else tuple._1 + 1
+
+  }
 }

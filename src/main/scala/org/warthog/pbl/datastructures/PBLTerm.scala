@@ -5,6 +5,7 @@ package org.warthog.pbl.datastructures
  * @param a the coefficient
  * @param l a literal
  */
-class PBLTerm(a: BigInt, l: PBLLiteral) {
+class PBLTerm(var a: BigInt, var l: PBLLiteral) {
 
+  override def toString = a.toString() + " " + l.toString
 }

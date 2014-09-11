@@ -7,7 +7,7 @@ import org.warthog.generic.formulas.Formula
  * @param v a variable
  * @param phase the phase of the variable
  */
-class PBLLiteral(v: PBLVariable, phase: Boolean = true){
+class PBLLiteral(val v: PBLVariable, val phase: Boolean = true){
 
   override def toString = if(phase) v.toString else Formula.NOT + v.toString
 
