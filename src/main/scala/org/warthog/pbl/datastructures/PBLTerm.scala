@@ -8,4 +8,6 @@ package org.warthog.pbl.datastructures
 class PBLTerm(var a: BigInt, var l: PBLLiteral) {
 
   override def toString = a.toString() + " " + l.toString
+
+  def copy = new PBLTerm(BigInt(a.toString()) ,l.copy)
 }

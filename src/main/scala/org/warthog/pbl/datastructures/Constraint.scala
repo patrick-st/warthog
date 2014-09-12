@@ -15,12 +15,13 @@ abstract class Constraint (){
   var terms :  List[PBLTerm]
   //right-hand side of the constraint
   var degree : BigInt
-  normalize()
+
 
   def this(terms: List[PBLTerm], degree: BigInt){
     this()
     this.terms = terms
     this.degree = degree
+    normalize()
   }
 
   /**
@@ -41,5 +42,12 @@ abstract class Constraint (){
         degree += t.a
       }
     }
+  }
+
+  def copy: Constraint
+
+  def *(x: BigInt) =  {
+    terms.map(_.a *= x)
+    degree *= x
   }
 }

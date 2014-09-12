@@ -17,5 +17,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
     terms.foreach(set += _.a)
     set.size == 1
   }
+
+  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree)
 }
 

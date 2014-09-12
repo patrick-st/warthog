@@ -17,4 +17,6 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
     val tuple = (degree /% coeff)
     degree =  if (tuple._2 == 0) tuple._1 else tuple._1 + 1
   }
+
+  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree)
 }

@@ -10,5 +10,7 @@ import org.warthog.pbl.PBL
 class PBLVariable(val name: String) {
   override def toString = name
 
+  def copy = this
+
 
 }
