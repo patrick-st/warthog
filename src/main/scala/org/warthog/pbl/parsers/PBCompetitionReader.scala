@@ -2,13 +2,20 @@ package org.warthog.pbl.parsers
 
 import org.warthog.pbl.datastructures._
 
+import scala.collection.mutable
+
 /**
  * Parser to read pseudo-boolean constraint instances
  * in Pseudo-boolean Competition format
  */
 object PBCompetitionReader {
+  var variables = new mutable.HashMap[Int, PBLVariable]()
 
-
+  /**
+   * Read a File in Pseudo-Boolean Competition format
+   * @param path path of the source
+   * @return a pair containing a list of all constraints an the objective function
+   */
   def readCompetitionFormat (path: String): (List[Constraint], List[PBLTerm]) = {
     var preambleRead = false
     var numberOfConstraintsInPreamble = 0
@@ -18,7 +25,7 @@ object PBCompetitionReader {
     val lines = io.Source.fromFile(path).getLines()
     var lineNumber = 0
 
-    var constraints: List[Constraint] = List[Constraint]()
+    var constraints = List[Constraint]()
     var objectiveFunction = List[PBLTerm]()
 
     while (lines.hasNext) {
@@ -44,12 +51,12 @@ object PBCompetitionReader {
       }
     }
 
-    val vars = constraints.foldLeft(Set[String]())(_ ++ _.terms.foldLeft(Set[String]())(_ + _.l.v.name))
+    val vars = this.variables.size
     if (preambleRead) {
       if (numberOfConstraintsInPreamble+numberOfEqualityConstraints != constraints.size)
         System.err.println("Number of Clauses in Preamble: " + numberOfConstraintsInPreamble + ", " + "Number of computed Clauses: " + constraints.size)
-      if (numberOfVarsInPreamble != vars.size)
-        System.err.println("Number of Vars in Preamble: " + numberOfVarsInPreamble + ", " + "Number of computed Vars: " + vars.size)
+      if (numberOfVarsInPreamble != vars)
+        System.err.println("Number of Vars in Preamble: " + numberOfVarsInPreamble + ", " + "Number of computed Vars: " + vars)
     }
     (constraints, objectiveFunction)
   }
@@ -62,7 +69,7 @@ object PBCompetitionReader {
    * @param line string representation of a constraint
    * @return the generated constraint
    */
-  def parseConstraint(line: String) : (Constraint, Option[Constraint]) ={
+  private def parseConstraint(line: String) : (Constraint, Option[Constraint]) ={
    //check if the line contains an '>=' or '=' constraint
     val equalOperator = !line.contains(">=")
     //split the line into left-hand and right-hand side
@@ -92,7 +99,11 @@ object PBCompetitionReader {
     (constraint, option)
   }
 
-
+  /**
+   * Parse the objective function
+   * @param line string representation of the objective function
+   * @return a list of terms
+   */
   private def parseObjective(line: String) = {
     val termRegex = "[-|+]?\\s*\\d+\\s*x\\d+".r
     val terms = termRegex.findAllIn(line.replace("min:",""))
@@ -106,11 +117,27 @@ object PBCompetitionReader {
    */
   private def string2Term(term: String): PBLTerm = {
     val splitted = term.trim.split("\\s+")
-    if(splitted.size == 3){
-      new PBLTerm(BigInt(splitted(0)+ splitted(1)),new PBLLiteral(new PBLVariable(splitted(2).trim)))
+    var variableName = ""
+    var variableID = 0
+    var termCoefficient : BigInt = 0
+    //case term matches +|-\\s+x\\s+\\d+
+    if(splitted.size == 3) {
+      variableName = splitted(2).trim
+      termCoefficient = BigInt(splitted(0) + splitted(1))
+     //case term = +|-x\\s+\\d+
     } else {
-      new PBLTerm(BigInt(splitted(0)), new PBLLiteral(new PBLVariable(splitted(1).trim)))
+      variableName = splitted(1)
+      termCoefficient = BigInt(splitted(0))
     }
+    variableID = variableName.drop(1).toInt
+    variables.get(variableID)  match {
+       case None =>
+         //compute new variable an add the variable to the HashMap
+          val vari: PBLVariable = new PBLVariable(variableName)
+          variables += variableID -> vari
+          new PBLTerm(termCoefficient, new PBLLiteral(vari))
+        case Some(v) => new PBLTerm(termCoefficient, new PBLLiteral(v))
+      }
   }
 
 }
@@ -119,15 +146,15 @@ object PBCompetitionReader {
 object Main {
   def main(args: Array[String]) {
     val startTime = System.currentTimeMillis()
-    //val pair = PBCompetitionReader.readCompetitionFormat("C:\\Users\\Patrick\\Desktop\\Masterarbeit\\PB competition instances\\PB11\\normalized-PB11\\DEC-SMALLINT-LIN\\lopes\\normalized-184.opb")
+    val pair = PBCompetitionReader.readCompetitionFormat("C:\\Users\\Patrick\\Desktop\\Masterarbeit\\PB competition instances\\PB11\\normalized-PB11\\DEC-SMALLINT-LIN\\heinz\\normalized-neos808444.opb")
     val elapsedTime = System.currentTimeMillis()-startTime
     println("Time in milli: " + elapsedTime)
     println("Time in min: " + elapsedTime/60000)
-    //println("objective function: " + pair._2)
+    println("objective function: " + pair._2)
     println()
     println("Constraints: ")
     //pair._1.foreach(println(_))
-    print(PBCompetitionReader.parseConstraint("2 x1 2 x2 -2 x3 = 2 ;"))
+
   }
 
 }
