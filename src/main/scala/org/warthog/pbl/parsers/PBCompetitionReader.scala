@@ -31,7 +31,6 @@ object PBCompetitionReader {
 
     while (lines.hasNext) {
       lineNumber += 1
-      println("Line: " + lineNumber)
       val line = lines.next().trim.replaceAll("\\s+", " ")
 
       if (!line.isEmpty) {
@@ -150,10 +149,7 @@ object PBCompetitionReader {
 
 object Main {
   def main(args: Array[String]) {
-    val pair = PBCompetitionReader.readCompetitionFormat("C:\\Users\\Patrick\\Desktop\\Masterarbeit\\PB competition instances\\PB11\\normalized-PB11\\DEC-SMALLINT-LIN\\lopes\\normalized-144.opb")
-    println(pair._1.size)
-    //println("objective: " + pair._2)
-
+    val pair = PBCompetitionReader.readCompetitionFormat("path_of_file")
   }
 
 }
