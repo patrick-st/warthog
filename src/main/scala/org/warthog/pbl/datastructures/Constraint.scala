@@ -1,5 +1,7 @@
 package org.warthog.pbl.datastructures
 
+
+
 /**
  *  Abstract base class for a pseudo-boolean constraints
  *  and cardinality constraints
@@ -32,7 +34,6 @@ abstract class Constraint (){
 
   /**
    * Normalize the constraint by eliminating all negative coefficients
-   *
    */
   def normalize() = {
     terms.map { t =>
@@ -44,10 +45,25 @@ abstract class Constraint (){
     }
   }
 
+  /**
+   * Returns a copy of the constraint
+   * @return the copied constraint
+   */
   def copy: Constraint
 
   def *(x: BigInt) =  {
     terms.map(_.a *= x)
     degree *= x
   }
+
+  /**
+   * Initialize the watched literals.
+   * @return the state of the constraint
+   */
+  def initWatchedLiterals: State.Value
+}
+
+object State extends Enumeration{
+  type State = Value
+  val UNIT, EMPTY, SAT, SUCCESS = Value
 }
