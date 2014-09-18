@@ -13,7 +13,7 @@ import scalaz.Id
 class PBLVariable(val name: String) {
   //ID = Integer of the variable name
   val ID = name.drop(1).toInt
-  var watched = List[PBLConstraint]()
+  var watched = List[Constraint]()
   var level: Int = -1
 
   override def toString = name
@@ -21,6 +21,4 @@ class PBLVariable(val name: String) {
   def copy = this
 
   def add(other: Constraint) = watched +:= other
-
-
 }
