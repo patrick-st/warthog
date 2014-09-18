@@ -1,9 +1,7 @@
 package org.warthog.pbl.datastructures
 
-import org.warthog.generic.formulas.Variable
-import org.warthog.pbl.PBL
 
-import scalaz.Id
+import scala.collection.mutable.ListBuffer
 
 /**
  * Pseudo-boolean Variable
@@ -13,12 +11,20 @@ import scalaz.Id
 class PBLVariable(val name: String) {
   //ID = Integer of the variable name
   val ID = name.drop(1).toInt
-  var watched = List[Constraint]()
+  var watched = ListBuffer[Constraint]()
   var level: Int = -1
+  var state: State.Value = State.OPEN
 
   override def toString = name
 
   def copy = this
 
-  def add(other: Constraint) = watched +:= other
+  def add(c: Constraint) = watched += c
+
+  def remove(c: Constraint) = watched -= c
+}
+
+object State extends Enumeration {
+  type State = Value
+  val TRUE, FALSE, OPEN = Value
 }

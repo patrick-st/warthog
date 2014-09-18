@@ -10,4 +10,11 @@ class PBLTerm(var a: BigInt, var l: PBLLiteral) {
   override def toString = a.toString() + " " + l.toString
 
   def copy = new PBLTerm(BigInt(a.toString()) ,l.copy)
+
+  override def equals(p: Any) = {
+    if(p.isInstanceOf[PBLTerm]){
+      p.asInstanceOf[PBLTerm].a == this.a && p.asInstanceOf[PBLTerm].l == this.l
+    } else
+      false
+  }
 }

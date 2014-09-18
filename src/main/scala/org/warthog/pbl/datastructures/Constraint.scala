@@ -60,7 +60,7 @@ abstract class Constraint (){
    * Initialize the watched literals.
    * @return the state of the constraint
    */
-  def initWatchedLiterals: State.Value
+  def initWatchedLiterals: ConstraintState.Value
 
   /**
    * Update the watched literals and re-watch a new literal if necessary
@@ -68,10 +68,10 @@ abstract class Constraint (){
    * @param value the assigned value
    * @return the new state of the constraint
    */
-  def updateWatchedLiterals(v: PBLVariable, value: Boolean): State.Value
+  def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState.Value
 }
 
-object State extends Enumeration{
-  type State = Value
+object ConstraintState extends Enumeration{
+  type ConstraintState = Value
   val UNIT, EMPTY, SAT, SUCCESS = Value
 }

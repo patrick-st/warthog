@@ -14,5 +14,14 @@ class PBLLiteral(val v: PBLVariable, val phase: Boolean = true){
   def negate: PBLLiteral = new PBLLiteral(v, !phase)
 
   def copy = new PBLLiteral(v.copy, phase)
+
+  override def equals(p: Any) = {
+    if(p.isInstanceOf[PBLLiteral]){
+      p.asInstanceOf[PBLLiteral].v == this.v && (p.asInstanceOf[PBLLiteral].phase == this.phase)
+    } else
+      false
+  }
+
+  def evaluates2True = (phase && v.state == State.TRUE) || (!phase && v.state == State.FALSE)
 }
 

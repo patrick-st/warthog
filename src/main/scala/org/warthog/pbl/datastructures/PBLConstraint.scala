@@ -62,7 +62,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   }
 
   /**
-   * Update the
+   * Update the two counters currentSum and slack
    * @param v the assigned variable
    * @param value the assigned value
    * @return the new state of the constraint
@@ -70,7 +70,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean) = {
     for(t <- terms; if t.l.v == v){
       //literal evaluates to true => currentSum has to be updated
-      if((t.l.phase && value) || (!t.l.phase && !value)){
+      if(t.l.phase == value){
         currentSum += t.a
       //literal evaluates to false => slack has to be updated
       } else {
@@ -85,14 +85,14 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    * Checks if the constraint is empty, unit or sat
    * @return
    */
-  private def getCurrentState: State.Value = {
+  private def getCurrentState: ConstraintState.Value = {
     if(slack < 0)
-      State.EMPTY
+      ConstraintState.EMPTY
     else if(this.isUnit)
-      State.UNIT
+      ConstraintState.UNIT
     else if(currentSum >= degree)
-      State.SAT
-    else State.SUCCESS
+      ConstraintState.SAT
+    else ConstraintState.SUCCESS
   }
 }
 
