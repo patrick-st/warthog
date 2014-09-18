@@ -41,14 +41,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
     slack = terms.map(_.a).sum - degree
     //add the clause to watched lists of all variables
     terms.map(_.l.v.add(this))
-
-    if(slack < 0)
-      State.EMPTY
-    else if(this.isUnit)
-      State.UNIT
-    else if(degree < 0)
-      State.SAT
-    else State.SUCCESS
+    getCurrentState
   }
 
   /**
@@ -66,6 +59,40 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
       }
       false
     }
+  }
+
+  /**
+   * Update the
+   * @param v the assigned variable
+   * @param value the assigned value
+   * @return the new state of the constraint
+   */
+  override def updateWatchedLiterals(v: PBLVariable, value: Boolean) = {
+    for(t <- terms; if t.l.v == v){
+      //literal evaluates to true => currentSum has to be updated
+      if((t.l.phase && value) || (!t.l.phase && !value)){
+        currentSum += t.a
+      //literal evaluates to false => slack has to be updated
+      } else {
+        slack -= t.a
+      }
+    }
+    //return the current state
+   getCurrentState
+  }
+
+  /**
+   * Checks if the constraint is empty, unit or sat
+   * @return
+   */
+  private def getCurrentState: State.Value = {
+    if(slack < 0)
+      State.EMPTY
+    else if(this.isUnit)
+      State.UNIT
+    else if(currentSum >= degree)
+      State.SAT
+    else State.SUCCESS
   }
 }
 

@@ -61,6 +61,14 @@ abstract class Constraint (){
    * @return the state of the constraint
    */
   def initWatchedLiterals: State.Value
+
+  /**
+   * Update the watched literals and re-watch a new literal if necessary
+   * @param v the assigned variable
+   * @param value the assigned value
+   * @return the new state of the constraint
+   */
+  def updateWatchedLiterals(v: PBLVariable, value: Boolean): State.Value
 }
 
 object State extends Enumeration{

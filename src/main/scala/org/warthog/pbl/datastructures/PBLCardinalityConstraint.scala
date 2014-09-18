@@ -53,4 +53,6 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
 
   }
 
+
+
 }
