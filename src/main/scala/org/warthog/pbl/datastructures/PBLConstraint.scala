@@ -50,7 +50,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    */
   def isUnit(): Boolean = {
     if(currentSum > degree)
-      true
+      false
     else {
       for (t <- terms) {
         if (t.a > slack) {

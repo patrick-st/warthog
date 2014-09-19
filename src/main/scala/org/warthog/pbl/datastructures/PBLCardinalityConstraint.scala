@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
 class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) extends Constraint(terms, degree){
   reduceCoefficients()
 
-  var watchedLiterals = new ArrayBuffer[PBLTerm](degree.toInt + 1)
+  var watchedLiterals = new ArrayBuffer[PBLTerm](degree.+(1).toInt)
 
   /**
    * Reduce all coefficients to 1 and adapt the degree accordingly
@@ -44,7 +44,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
       var i = 0
       //watch degree + 1 many terms
       terms.exists{t =>
-        watchedLiterals(i) = t
+        watchedLiterals += t
         t.l.v.add(this)
         i += 1
         i > degree

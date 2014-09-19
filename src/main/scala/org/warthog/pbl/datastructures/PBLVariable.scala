@@ -46,8 +46,9 @@ class PBLVariable(val name: String) {
     //update the constraints in watched list
     watched.map{c =>
       c.updateWatchedLiterals(this,value) match {
-        case ConstraintState.SAT => unitConstraints += c
+        case ConstraintState.UNIT => unitConstraints += c
         case ConstraintState.EMPTY => emptyConstraint = Some(c)
+        case _ =>
       }
     }
     emptyConstraint
