@@ -12,15 +12,6 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   //sum of all coefficients a_i where l_i not evaluates to true (l_i = false or open)
   var slack: BigInt = 0
 
-  /**
-   * Checks if the pseudo-boolean constraint is a cardinality constraint
-   * @return true if the constraint is a cardinality constraint else false
-   */
-  def isCardinalityConstraint(): Boolean = {
-    var set = Set[BigInt]()
-    terms.foreach(set += _.a)
-    set.size == 1
-  }
 
   /**
    * Returns a copy of the constraint

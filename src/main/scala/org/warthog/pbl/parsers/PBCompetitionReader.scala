@@ -88,18 +88,26 @@ object PBCompetitionReader {
     val rhs = splittedLine(1).trim.dropRight(1).trim
     val termRegex = "[-|+]?\\s*\\d+\\s*x\\d+".r
     //compute the terms of the '>=' constraint
-    val terms = termRegex.findAllIn(lhs)
-    val termList = terms.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
+    val terms = termRegex.findAllIn(lhs).duplicate
+    val termList = terms._1.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
 
     //compute the '>=' constraint
-    var constraint: Constraint = new PBLConstraint(termList, BigInt(rhs))
-    if (constraint.asInstanceOf[PBLConstraint].isCardinalityConstraint())
-      constraint = new PBLCardinalityConstraint(constraint.terms, constraint.degree)
+    val isCardinality = isCardinalityConstraint(termList)
+    val constraint = if (isCardinality) {
+      new PBLCardinalityConstraint(termList, BigInt(rhs))
+    } else {
+      new PBLConstraint(termList, BigInt(rhs))
+    }
     //compute the <= constraint if necessary
     val option = if (equalOperator) {
-      val lessOrEqualConstraint = constraint.copy
-      lessOrEqualConstraint * -1
-      lessOrEqualConstraint.normalize()
+      val termList2 = terms._2.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
+      //multiply the constraint with -1
+      termList2.map(_.a *= -1)
+      val lessOrEqualConstraint = if(isCardinality){
+        new PBLCardinalityConstraint(termList2, -BigInt(rhs))
+      } else {
+        new PBLConstraint(termList2, -BigInt(rhs))
+      }
       Some(lessOrEqualConstraint)
     } else {
       None
@@ -138,14 +146,18 @@ object PBCompetitionReader {
       termCoefficient = BigInt(splitted(0))
     }
     variableID = variableName.drop(1).toInt
-    variables.get(variableID) match {
-      case None =>
-        //compute new variable an add the variable to the HashMap
-        val vari: PBLVariable = new PBLVariable(variableName)
-        variables += variableID -> vari
-        new PBLTerm(termCoefficient, new PBLLiteral(vari))
-      case Some(v) => new PBLTerm(termCoefficient, new PBLLiteral(v))
-    }
+    new PBLTerm(termCoefficient, new PBLLiteral(variables.getOrElseUpdate(variableID, new PBLVariable(variableName))))
+  }
+
+  /**
+   * Checks if the constraint is a cardinality constraint
+   * @param terms the terms of the constraint
+   * @return true if the constraint is a cardinality constraint else false
+   */
+  private def isCardinalityConstraint(terms: List[PBLTerm]):Boolean ={
+    val coefficient = terms(0).a
+    terms.forall(_.a == coefficient)
   }
 }
+
 
