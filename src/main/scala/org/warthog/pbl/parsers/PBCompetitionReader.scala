@@ -8,6 +8,9 @@ import scala.collection.mutable.ListBuffer
 /**
  * Parser to read pseudo-boolean constraint instances
  * in Pseudo-boolean Competition format
+ * Reference: Input/Output Format and Solver Requirements
+ *            for the Competitions of Pseudo-Boolean Solvers
+ * http://www.cril.univ-artois.fr/PB12/format.pdf
  */
 object PBCompetitionReader {
   var variables = new mutable.HashMap[Int, PBLVariable]()
@@ -146,10 +149,3 @@ object PBCompetitionReader {
   }
 }
 
-
-object Main {
-  def main(args: Array[String]) {
-    val pair = PBCompetitionReader.readCompetitionFormat("path_of_file")
-  }
-
-}
