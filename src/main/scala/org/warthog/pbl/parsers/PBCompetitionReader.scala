@@ -51,9 +51,13 @@ object PBCompetitionReader {
             else System.err.println("Line " + lineNumber + ": Line doesn't end with ';' --> Skip line")
           case _ =>
             if(line.endsWith(";")){
-              parseConstraint(line) match {
-                case (c, None) => constraints += c
-                case (c1, Some(c2)) => constraints += c1; constraints += c2; numberOfEqualityConstraints += 1
+              try {
+                parseConstraint(line) match {
+                  case (c, None) => constraints += c
+                  case (c1, Some(c2)) => constraints += c1; constraints += c2; numberOfEqualityConstraints += 1
+                }
+              } catch {
+                case e: NumberFormatException => System.err.println("Line " + lineNumber + ": Number format exception --> Skip line")
               }
             } else System.err.println("Line " + lineNumber + ": Line doesn't end with ';' --> Skip line")
         }
@@ -63,7 +67,7 @@ object PBCompetitionReader {
     val vars = this.variables.size
     if (preambleRead) {
       if (numberOfConstraintsInPreamble + numberOfEqualityConstraints != constraints.size)
-        System.err.println("Number of Clauses in Preamble: " + numberOfConstraintsInPreamble + ", " + "Number of computed Clauses: " + constraints.size)
+        System.err.println("Number of Clauses in Preamble: " + numberOfConstraintsInPreamble + ", " + "Number of computed Clauses: " + (constraints.size - numberOfEqualityConstraints))
       if (numberOfVarsInPreamble != vars)
         System.err.println("Number of Vars in Preamble: " + numberOfVarsInPreamble + ", " + "Number of computed Vars: " + vars)
     }
@@ -86,10 +90,16 @@ object PBCompetitionReader {
     val lhs = splittedLine(0).trim
     //remove ';' of right-hand side
     val rhs = splittedLine(1).trim.dropRight(1).trim
-    val termRegex = "[-|+]?\\s*\\d+\\s*x\\d+".r
+    val termRegex = "[-|+]?\\s*\\d+\\s*x\\s*\\d+".r
     //compute the terms of the '>=' constraint
     val terms = termRegex.findAllIn(lhs).duplicate
-    val termList = terms._1.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
+    val termList = terms._1.foldLeft(ListBuffer[PBLTerm]()){
+      try {
+        _ += string2Term(_)
+      } catch {
+        case e: NumberFormatException => throw e
+      }
+    }.toList
 
     //compute the '>=' constraint
     val isCardinality = isCardinalityConstraint(termList)
@@ -100,7 +110,13 @@ object PBCompetitionReader {
     }
     //compute the <= constraint if necessary
     val option = if (equalOperator) {
-      val termList2 = terms._2.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
+      val termList2 = terms._2.foldLeft(ListBuffer[PBLTerm]()) {
+        try {
+          _ += string2Term(_)
+        } catch {
+          case e: NumberFormatException => throw e
+        }
+      }.toList
       //multiply the constraint with -1
       termList2.map(_.a *= -1)
       val lessOrEqualConstraint = if(isCardinality){
@@ -136,14 +152,22 @@ object PBCompetitionReader {
     var variableName = ""
     var variableID = 0
     var termCoefficient: BigInt = 0
-    //case term matches +|-\\s+x\\s+\\d+
+    //case term matches +|-\\s+\\d+\\s+x\\d+
     if (splitted.size == 3) {
       variableName = splitted(2).trim
-      termCoefficient = BigInt(splitted(0) + splitted(1))
-      //case term = +|-x\\s+\\d+
+      try {
+        termCoefficient = BigInt(splitted(0) + splitted(1))
+      } catch {
+        case e: NumberFormatException => throw e
+      }
+      //case term = +|-\\d+\\s+x\\d+
     } else {
       variableName = splitted(1)
-      termCoefficient = BigInt(splitted(0))
+      try {
+        termCoefficient = BigInt(splitted(0))
+      } catch {
+        case e: NumberFormatException => throw e
+      }
     }
     variableID = variableName.drop(1).toInt
     new PBLTerm(termCoefficient, new PBLLiteral(variables.getOrElseUpdate(variableID, new PBLVariable(variableName))))
@@ -159,5 +183,6 @@ object PBCompetitionReader {
     terms.forall(_.a == coefficient)
   }
 }
+
 
 
