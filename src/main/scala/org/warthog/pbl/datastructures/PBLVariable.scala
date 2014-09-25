@@ -18,6 +18,15 @@ class PBLVariable(val name: String) {
 
   override def toString = name
 
+  override def equals(p: Any) = {
+    if(p.isInstanceOf[PBLVariable]){
+      p.asInstanceOf[PBLVariable].name == this.name
+    } else
+      false
+  }
+
+  override def hashCode() = name.##
+
   def copy = this
 
   def add(c: Constraint) = watched += c

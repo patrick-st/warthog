@@ -32,6 +32,25 @@ abstract class Constraint (){
    */
   override def toString = terms.map(_.toString()+ " + ").foldLeft("")(_+_).dropRight(2) + ">= " + degree
 
+
+  override def equals(p: Any): Boolean = {
+    if(p.isInstanceOf[Constraint]){
+      val otherTerms = p.asInstanceOf[Constraint].terms
+      val otherDegree = p.asInstanceOf[Constraint].degree
+      if(terms.size != otherTerms.size || degree != otherDegree)
+        false
+       else {
+        for(t <- otherTerms)
+          if(!terms.contains(t))
+            return false
+        true
+      }
+    } else
+      false
+  }
+
+  override def hashCode() = terms.foldLeft(1)(_ & _.hashCode()) & degree.##
+
   /**
    * Normalize the constraint by eliminating all negative coefficients
    */

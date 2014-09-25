@@ -17,4 +17,6 @@ class PBLTerm(var a: BigInt, var l: PBLLiteral) {
     } else
       false
   }
+
+  override def hashCode() = l.hashCode() & a.##
 }
