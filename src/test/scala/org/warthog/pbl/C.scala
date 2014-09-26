@@ -17,10 +17,14 @@ object C {
 
   //literals
   val l1 = new PBLLiteral(x1)
+  val l1_1 = new PBLLiteral(x1)
   val l2 = new PBLLiteral(x2)
   val l3 = new PBLLiteral(x3)
   val l4 = new PBLLiteral(x4)
   val l5 = new PBLLiteral(x5)
+
+  val l3_ = new PBLLiteral(x3, false)
+  val l4_ = new PBLLiteral(x4, false)
 
 
   //terms
