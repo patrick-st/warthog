@@ -28,8 +28,11 @@ object C {
 
 
   //terms
-
-
+  val t1 = new PBLTerm(1,l1)
+  val t1_1 = new PBLTerm(1,l1)
+  val t1_2 = new PBLTerm(2,l1)
+  val t1_3 = new PBLTerm(1, new PBLLiteral(x1,false))
+  val t2 = new PBLTerm(1,l2)
 
 
   //constraints
@@ -68,12 +71,18 @@ object C {
     new PBLTerm(-1, l3.copy))
 
   val c1 = new PBLConstraint(terms1, 5)
+  val c1_1 = new PBLConstraint(terms1,5)
+  val c1_2 = new PBLConstraint(terms2,5)
+  val c1_3 = new PBLConstraint(terms1,6)
   val c2 = new PBLCardinalityConstraint(terms2, 2)
   val c3 = new PBLCardinalityConstraint(terms3, 1)
   val c4 = new PBLConstraint(terms4, -2)
   val c5_1 = new PBLCardinalityConstraint(terms5_1, 2)
   val c5_2 = new PBLCardinalityConstraint(terms5_2, -2)
 
+  val emptyConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 3)
+  val unitConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(2,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 3)
+  val satConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
 
   //objective function
   val objectiveFunction = List[PBLTerm](
