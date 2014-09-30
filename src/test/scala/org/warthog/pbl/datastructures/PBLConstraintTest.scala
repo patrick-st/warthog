@@ -9,7 +9,13 @@ import scala.collection.mutable.ListBuffer
  * Test for PBLConstraint
  */
 class PBLConstraintTest extends Specification {
-   sequential
+  sequential
+  C.x1.state = State.OPEN
+  C.x1_1.state = State.OPEN
+  C.x2.state = State.OPEN
+  C.x3.state = State.OPEN
+  C.x4.state = State.OPEN
+  C.x5.state = State.OPEN
 
   "c1" should {
     "be equal to c1" in {

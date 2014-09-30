@@ -10,6 +10,12 @@ import scala.collection.mutable.ListBuffer
  */
 class PBLCardinalityConstraintTest extends Specification {
   sequential
+  C.x1.state = State.OPEN
+  C.x1_1.state = State.OPEN
+  C.x2.state = State.OPEN
+  C.x3.state = State.OPEN
+  C.x4.state = State.OPEN
+  C.x5.state = State.OPEN
 
   "c2" should {
     "be equal to c2" in {
