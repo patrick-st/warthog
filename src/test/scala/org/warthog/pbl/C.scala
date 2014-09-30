@@ -75,6 +75,9 @@ object C {
   val c1_2 = new PBLConstraint(terms2,5)
   val c1_3 = new PBLConstraint(terms1,6)
   val c2 = new PBLCardinalityConstraint(terms2, 2)
+  val c2_1 = new PBLCardinalityConstraint(terms2,2)
+  val c2_2 = new PBLCardinalityConstraint(terms3,2)
+  val c2_3 = new PBLCardinalityConstraint(terms2,4)
   val c3 = new PBLCardinalityConstraint(terms3, 1)
   val c4 = new PBLConstraint(terms4, -2)
   val c5_1 = new PBLCardinalityConstraint(terms5_1, 2)
@@ -83,6 +86,10 @@ object C {
   val emptyConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 3)
   val unitConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(2,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 3)
   val satConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
+
+  val emptyCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 2)
+  val unitCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 2)
+  val satCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
 
   //objective function
   val objectiveFunction = List[PBLTerm](
