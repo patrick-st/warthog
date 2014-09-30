@@ -47,7 +47,6 @@ class PBLConstraintTest extends Specification {
   val units = ListBuffer[Constraint]()
   "After assigning x1 to false, c1" should {
     "be unit" in {
-
       C.x1.assign(false,units,1,null)
       units.contains(C.c1) must be equalTo true
     }
@@ -78,7 +77,7 @@ class PBLConstraintTest extends Specification {
   }
 
   "After initializing the watched literals, unitConstraint" should {
-    "be unit" in {
+    "be sat" in {
       C.satConstraint.initWatchedLiterals() must be equalTo ConstraintState.SAT
     }
   }
