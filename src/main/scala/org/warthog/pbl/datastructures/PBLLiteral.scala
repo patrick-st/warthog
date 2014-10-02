@@ -25,5 +25,7 @@ class PBLLiteral(val v: PBLVariable, val phase: Boolean = true){
   override def hashCode() = v.hashCode() & phase.##
 
   def evaluates2True = (phase && v.state == State.TRUE) || (!phase && v.state == State.FALSE)
+
+  def evaluates2False = (phase && v.state == State.FALSE) || (!phase && v.state == State.TRUE)
 }
 

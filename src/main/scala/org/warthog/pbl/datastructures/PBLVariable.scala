@@ -62,6 +62,11 @@ class PBLVariable(val name: String) {
     }
     emptyConstraint
   }
+
+  def unassign() = {
+    this.level = -1
+    this.state = State.OPEN
+  }
 }
 
 object State extends Enumeration {
