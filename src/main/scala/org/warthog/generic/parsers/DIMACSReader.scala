@@ -26,6 +26,7 @@
 package org.warthog.generic.parsers
 
 import org.warthog.generic.formulas._
+import org.warthog.pbl.datastructures._
 import org.warthog.pl.formulas.PL
 import org.warthog.pl.datastructures.cnf.{ PLLiteral, ImmutablePLClause }
 import org.warthog.fol.formulas._
@@ -33,6 +34,8 @@ import org.warthog.fol.datastructures.cnf.{ FOLLiteral, ImmutableFOLClause }
 import org.warthog.fol.formulas.FOLVariable
 import scala.Some
 import org.warthog.pl.formulas.PLAtom
+
+import scala.collection.mutable
 
 /**
   * A Reader for dimacs- and qdimacs-files
@@ -47,6 +50,20 @@ import org.warthog.pl.formulas.PLAtom
   * TODO: Read also dnf
   */
 object DIMACSReader {
+
+  def dimacs2PBConstraints(path: String) : (List[Constraint], mutable.HashMap[Int, PBLVariable]) = {
+    val variables = mutable.HashMap[Int, PBLVariable]()
+    val instance = dimacs2Clauses(path).foldLeft(List[Constraint]()){(list, clause) =>
+      val termList = clause.foldLeft(List[PBLTerm]()){(termsList, lit) =>
+        if(lit < 0)
+          termsList :+ new PBLTerm(1,new PBLLiteral(variables.getOrElseUpdate(lit.abs, new PBLVariable("x" + lit.abs.toString)), false))
+        else
+          termsList :+ new PBLTerm(1,new PBLLiteral(variables.getOrElseUpdate(lit.abs, new PBLVariable("x" + lit.abs.toString))))
+      }
+    list :+ new PBLCardinalityConstraint(termList,1)
+    }
+    (instance, variables)
+  }
 
   /**
     * Reads a dimacs-file and returns a corresponding Formula[PL]
