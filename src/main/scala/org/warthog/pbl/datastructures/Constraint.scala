@@ -88,6 +88,12 @@ abstract class Constraint (){
    * @return the new state of the constraint
    */
   def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState.Value
+
+  /**
+   * Computes all literals which has to be propagated
+   * @return the literals to propagate
+   */
+  def getLiteralsToPropagate : List[PBLLiteral]
 }
 
 object ConstraintState extends Enumeration{

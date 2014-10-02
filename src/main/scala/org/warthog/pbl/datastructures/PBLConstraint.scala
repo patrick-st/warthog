@@ -73,6 +73,19 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   }
 
   /**
+   * Computes all literals which has to be propagated
+   * @return the literals to propagate
+   */
+  override def getLiteralsToPropagate = {
+    terms.foldLeft(List[PBLLiteral]()){(list, term) =>
+      if(term.l.v.state == State.OPEN && term.a > slack)
+        list :+ term.l
+      else
+        list
+    }
+  }
+
+  /**
    * Checks if the constraint is empty, unit or sat
    * @return
    */
@@ -84,6 +97,24 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
     else if(currentSum >= degree)
       ConstraintState.SAT
     else ConstraintState.SUCCESS
+  }
+
+  def updateSlack = {
+    this.slack = terms.foldLeft(List[BigInt]()){(list,term) =>
+      if(!term.l.evaluates2False)
+        list :+ term.a
+      else
+        list
+    }.sum - degree
+  }
+
+  def updateCurrentSum = {
+    this.currentSum = terms.foldLeft(List[BigInt]()){(list, term) =>
+      if(term.l.evaluates2True)
+        list :+ term.a
+      else
+        list
+    }.sum
   }
 }
 

@@ -91,6 +91,18 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
   }
 
   /**
+   * Computes all literals which has to be propagated
+   * @return the literals to propagate
+   */
+  override def getLiteralsToPropagate = {
+    watchedLiterals.foldLeft(List[PBLLiteral]()){(list, term) =>
+      if(term.l.v.state == State.OPEN)
+        list :+ term.l
+      else
+        list
+    }
+  }
+  /**
    * Search for a new term with a literal which can be watched
    * @return None if no literal can be found else Some(PBLTerm)
    */
@@ -110,7 +122,11 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * @return true if the constraint is unit else false (and the constraint is empty)
    */
   private def isUnit(t: PBLTerm): Boolean = {
-    watchedLiterals.-(t).foldLeft(true){(bol,t) =>
-      bol && (t.l.v.state == State.OPEN || t.l.evaluates2True)}
+    if(watchedLiterals.size == 1)
+      false
+    else
+      watchedLiterals.-(t).foldLeft(true){(bol,t) =>
+        bol && (t.l.v.state == State.OPEN || t.l.evaluates2True)}
   }
 }
+
