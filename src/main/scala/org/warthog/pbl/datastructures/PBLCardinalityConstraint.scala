@@ -1,5 +1,7 @@
 package org.warthog.pbl.datastructures
 
+import org.warthog.pbl.datastructures.ConstraintState.ConstraintState
+
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -28,6 +30,10 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    */
   def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree)
 
+  /**
+   * Initialize the watched literals.
+   * @return the state of the constraint
+   */
   def initWatchedLiterals() = {
     if(terms.size < degree)
       ConstraintState.EMPTY
@@ -60,35 +66,31 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * @param value the assigned value
    * @return the new state of the constraint
    */
-  override def updateWatchedLiterals(v: PBLVariable, value: Boolean)  = {
-    var state = ConstraintState.SUCCESS
-    for(i <- 0 to watchedLiterals.size-1; if watchedLiterals(i).l.v == v){
-      val t = watchedLiterals(i)
-      //literal evaluates to false => find new literal to watch
-      if(t.l.phase != value){
-        getNewWatchedLiteral match {
-            //no new literal can be found => unit
-            case None => {
-              //constraint is unit
-              if(this.isUnit(t)){
-                state = ConstraintState.UNIT
-               //constraint is empty
-              } else {
-                state = ConstraintState.EMPTY
-              }
-            }
-             //new literal was found => success
-            case Some(newTerm) => {
-              //update the watched list of v (remove this constraint)
-              v.remove(this)
-              watchedLiterals.update(i,newTerm)
-              newTerm.l.v.add(this)
-            }
+  override def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState = {
+    for(t <- watchedLiterals; if t.l.v == v ){
+      //if the corresponding literal evaluates to true, nothing has to be updated
+      if(t.l.evaluates2True) return ConstraintState.SUCCESS
+      //search for a new literal
+      getNewWatchedLiteral match {
+        //new literal was found
+        case Some(newTerm) => {
+          //remove the old literal and add the new literal
+          watchedLiterals = watchedLiterals.filter(_ != t) += newTerm
+          //update the watched lists of the variables
+          t.l.v.remove(this)
+          newTerm.l.v.add(this)
+          return ConstraintState.SUCCESS
+        }
+        case None => {
+            if(this.isUnit()) return ConstraintState.UNIT
+            if(this.isSat()) return ConstraintState.SAT
         }
       }
+      return ConstraintState.EMPTY
     }
-    state
+    return ConstraintState.EMPTY
   }
+
 
   /**
    * Computes all literals which has to be propagated
@@ -117,16 +119,22 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
   }
 
   /**
-   * Check if the constraint is unit or empty
-   * @param t the term which can't be re-watched
-   * @return true if the constraint is unit else false (and the constraint is empty)
+   * Check if the constraint is unit or not
+   * @return true if the constraint is unit else false
    */
-  private def isUnit(t: PBLTerm): Boolean = {
-    if(watchedLiterals.size == 1)
-      false
-    else
-      watchedLiterals.-(t).foldLeft(true){(bol,t) =>
-        bol && (t.l.v.state == State.OPEN || t.l.evaluates2True)}
+  private def isUnit(): Boolean = {
+      val openLiterals = watchedLiterals.filter { t => t.l.v.state == State.OPEN}.size
+      val trueLiterals = watchedLiterals.filter{t => t.l.evaluates2True}.size
+      openLiterals == degree && trueLiterals < degree
+
+  }
+
+  /**
+   * Checks if the constraint is satisfied or not
+   * @return true if the constraint is satisfied else false
+   */
+  private def isSat(): Boolean = {
+    watchedLiterals.filter{t => t.l.evaluates2True}.size >= degree
   }
 }
 
