@@ -10,9 +10,31 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
  */
 object LearnUtil {
 
+  /**
+   * Method to learn clauses
+   * @param conflict the conflict
+   * @param stack the assigned variables and their reasons
+   * @param level the current level
+   * @return the new clause to learn
+   */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) =
     this.learn(reduce2Clause,reduce2Clause,resolve,conflict,stack,level)
 
+
+  /**
+   * Generic function to provide three different learn methods
+   * 1. clause learning
+   * 2. pseudo-boolean constraint learning
+   * 3. cardinality constraint learning
+   * For more informations see: Donald Chai, Andreas Kuehlmann: A Fast Pseudo-Boolean Constraint Solver
+   * @param reduce1
+   * @param reduce2
+   * @param resolve
+   * @param conflict the conflict
+   * @param stack the assigned variables and their reasons
+   * @param level the current level
+   * @return the new clause to learn
+   */
  private def learn(reduce1: (Constraint, PBLVariable) => Constraint, reduce2: (Constraint, PBLVariable) => Constraint,
              resolve: (Constraint,Constraint,PBLVariable) => Constraint,
              conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
@@ -73,6 +95,9 @@ object LearnUtil {
 
   /**
    * Computes the resolvent of two given clauses
+   * Note: Currently only applicable for clauses
+   * Maybe the method can be adapted for pseudo-boolean constraints.
+   * Else a new resolve method has to be implemented for pb constraints.
    * @param c1 first clause
    * @param c2 second clause
    * @param v the variable to resolve
@@ -87,6 +112,14 @@ object LearnUtil {
     }
   }
 
+  /**
+   * Check if the given constraint is 1UIP or not
+   * Note: Currently only applicable for clauses
+   * Maybe the method can be adapted for pseudo-boolean constraints
+   * @param c1
+   * @param level
+   * @return
+   */
   private def is1UIP(c1: Constraint, level: Int) ={
     c1.terms.filter(_.l.v.level == level).size == 1
   }
