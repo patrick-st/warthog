@@ -1,10 +1,8 @@
 package org.warthog.pbl.decisionprocedures
 
-import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.pbl.datastructures._
-
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 /**
  * Implements a CDCL like approach to solve pseudo-boolean constraints
@@ -17,6 +15,7 @@ class CDCLLike {
   val stack = mutable.Stack[PBLVariable]()
   var variables = mutable.HashMap[Int,PBLVariable]()
   var units = ListBuffer[Constraint]()
+  var occurrences =  mutable.HashMap[PBLVariable, Int]()
 
   def this(instance: List[Constraint], variables: mutable.HashMap[Int, PBLVariable]){
     this()
@@ -28,16 +27,29 @@ class CDCLLike {
       c
     }
     this.variables = variables
+    this.occurrences = this.computeOccurrences(instance)
   }
+
+
+  private def computeOccurrences(instance: List[Constraint]): mutable.HashMap[PBLVariable, Int] = {
+    var occ = mutable.HashMap[PBLVariable, Int]()
+    instance.map(_.terms.map{t =>
+     occ.get(t.l.v) match {
+       case Some(o) => occ.update(t.l.v,o + 1)
+       case None => {
+         occ.+=((t.l.v, 1))
+       }
+     }
+    })
+    occ
+  }
+
 
   def solve : Boolean = {
     while(true){
-      //println("units: " + units.size)
       this.unitPropagation match {
         case Some(c) => {
-          //println("conflict: " + c)
           val backtrackLevel = this.analyzeConflict(c)
-          //println("backtracklevel: " + backtrackLevel)
           if(backtrackLevel == -1)
             return false
           this.backtrack(backtrackLevel)
@@ -47,7 +59,6 @@ class CDCLLike {
             case None => return true
             case Some(v) => {
               this.level += 1
-              //println("assigned: " + v + " to false")
               v.assign(false,units,level,null)
               this.stack.push(v)
             }
@@ -58,34 +69,26 @@ class CDCLLike {
     false
   }
 
-  def printVariables = {
-    variables.values.map{v =>
-      println(v.name + ": " + v.state)
-    }
-  }
 
   /**
    * Treat all unit constraints and all literals which has to be propagated
    * @return
    */
-  private def unitPropagation: Option[Constraint] ={
+   def unitPropagation: Option[Constraint] ={
     while(!units.isEmpty){
       for(unit <- units){
         val literals = unit.getLiteralsToPropagate
-       // println("literals to propagate: " + literals)
         literals.map{l =>
-          val conflict: Option[Constraint] =  if(l.phase) {
-            //println("propagated: " + l.v + " to true")
-            l.v.assign(true, units, level, unit)
-          }
-            else {
-           // println("propagated: " + l.v + " to false")
-            l.v.assign(false, units, level, unit)
-          }
+          val conflict: Option[Constraint] =
+            if(l.phase)
+              l.v.assign(true, units, level, unit)
+            else
+              l.v.assign(false, units, level, unit)
           stack.push(l.v)
-          //println("conflict: " + conflict)
           conflict match {
-            case Some(c) => return Some(c)
+            case Some(c) => {
+              return Some(c)
+            }
             case _ =>
           }
         }
@@ -97,19 +100,21 @@ class CDCLLike {
   }
 
 
-  private def analyzeConflict(emptyClause: Constraint): Int = {
+  def analyzeConflict(emptyClause: Constraint): Int = {
+    var backtrackLevel = -1
     if(this.level == 0)
       return -1
     //compute the clause to learn
-    val learnedClause = LearnUtil.learnClause(emptyClause,stack,level)
-   // println("learned: " + learnedClause)
+    var learnedClause = LearnUtil.learnClause(emptyClause,stack,level)
     //compute backtracking level
-    val backtrackingLevel: Int = learnedClause.terms.minBy(_.l.v.level).l.v.level
-    //set the watched literals of learnedClause
-    learnedClause.initWatchedLiterals
-    //println("watched of learend clause: " + learnedClause.asInstanceOf[PBLCardinalityConstraint].watchedLiterals)
+    for (t <- learnedClause.terms) {
+      val level: Int = t.l.v.level
+      if (level != this.level && level > backtrackLevel) {
+        backtrackLevel = level
+      }
+    }
+    learnedClause = this.setWatchedLiterals(learnedClause, this.level, backtrackLevel)
     instance +:= learnedClause
-
     //update the units
     units = ListBuffer[Constraint](learnedClause)
 
@@ -117,16 +122,14 @@ class CDCLLike {
     if(learnedClause.terms.size == 1)
       return 0
 
-    backtrackingLevel
+    backtrackLevel
   }
 
 
-  private def backtrack(level: Int): Unit ={
+  def backtrack(level: Int): Unit ={
     while(!stack.isEmpty && stack.top.level > level){
-     // println(" bevore backtracking: " + stack.top + ", " + stack.top.level, stack.top.state)
       val vari = stack.pop()
       vari.unassign()
-      //println(" after backtracking: " + vari + ", " + vari.level, vari.state)
     }
     //set the new level
     this.level = level
@@ -140,26 +143,48 @@ class CDCLLike {
     }
   }
 
-  /**
-   * Searches for an unassigned variable to assign
-   * @return an unassigned variable
-   */
-  private def getUnassignedVar = {
+
+  private def getUnassignedVar: Option[PBLVariable] = {
     var unassigned: PBLVariable = null
-    if(variables.values.exists{v =>  unassigned = v; v.state == State.OPEN}){
-      Some(unassigned)
-    } else {
+    val openVars = variables.values.filter(_.state == State.OPEN).toList
+    if(openVars.isEmpty){
       None
+    } else {
+     Some(openVars.maxBy(this.occurrences.get(_).get))
     }
+  }
+  
+
+  private def setWatchedLiterals(c: Constraint, level: Int, backtrackLevel: Int): Constraint = {
+    if(c.isInstanceOf[PBLCardinalityConstraint]) {
+      val cardinality = c.asInstanceOf[PBLCardinalityConstraint]
+      val watched = new ArrayBuffer[PBLTerm](math.min(cardinality.terms.size, (cardinality.degree.+(1).toInt)))
+      if (cardinality.terms.size == cardinality.degree) {
+        //all literals have to be watched
+        cardinality.terms.copyToBuffer(watched)
+        watched.map(_.l.v.add(cardinality))
+      } else {
+        //set the literals which will be forced after backtracking
+        for (t <- cardinality.terms) {
+          if (t.l.v.level == level) {
+            watched += t
+            t.l.v.add(cardinality)
+          }
+        }
+        //set the rest of the literals
+        for (t <- cardinality.terms) {
+          if(watched.size != cardinality.degree.+(1) && !watched.contains(t) && t.l.v.level == backtrackLevel){
+            watched += t
+            t.l.v.add(cardinality)
+          }
+        }
+      }
+      cardinality.watchedLiterals = watched
+      cardinality
+
+    } else
+      c
   }
 }
 
-object Main{
-  def main(args: Array[String]) {
-    val instance = DIMACSReader.dimacs2PBConstraints("src\\test\\resources\\dimacs\\uf150-010.cnf")
-    val solver = new CDCLLike(instance._1, instance._2)
-    println("start to solve")
-    println(solver.solve)
-    solver.printVariables
-  }
-}
+
