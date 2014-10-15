@@ -106,5 +106,4 @@ class CDCLLikeTest extends Specification {
       solver.solve must beFalse
     }
   }
-
 }

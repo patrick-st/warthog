@@ -3,7 +3,7 @@ package org.warthog.pbl.datastructures
 import org.specs2.mutable.Specification
 import org.warthog.pbl.C
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 /**
  * Test for PBLConstraint
@@ -50,7 +50,7 @@ class PBLConstraintTest extends Specification {
 
   }
 
-  val units = ListBuffer[Constraint]()
+  val units = mutable.HashSet[Constraint]()
   "After assigning x1 to false, c1" should {
     "be unit" in {
       C.x1.assign(false,units,1,null)

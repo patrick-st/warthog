@@ -2,6 +2,7 @@ package org.warthog.pbl.datastructures
 
 import org.specs2.mutable.Specification
 import org.warthog.pbl.C
+import scala.collection.mutable
 
 import scala.collection.mutable.ListBuffer
 
@@ -54,7 +55,7 @@ class PBLCardinalityConstraintTest extends Specification {
     }
   }
 
-  val units = ListBuffer[Constraint]()
+  val units = mutable.HashSet[Constraint]()
   "After assigning x1 and x2 to false, c2" should {
     "be unit" in {
       C.x1.assign(false,units,1,null)
