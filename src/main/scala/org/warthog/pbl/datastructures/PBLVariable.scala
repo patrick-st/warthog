@@ -2,6 +2,7 @@ package org.warthog.pbl.datastructures
 
 
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 /**
  * Pseudo-boolean Variable
@@ -15,6 +16,7 @@ class PBLVariable(val name: String) {
   var watched = ListBuffer[Constraint]()
   var level: Int = -1
   var reason: Constraint = null
+  var activity = 0.0
 
   override def toString = name
 
@@ -42,7 +44,7 @@ class PBLVariable(val name: String) {
    * @param reason the reason why the variable is assigned
    * @return Some(empty-clause) or None
    */
-  def assign(value: Boolean, unitConstraints: ListBuffer[Constraint], level: Int, reason: Constraint): Option[Constraint] = {
+  def assign(value: Boolean, unitConstraints: mutable.HashSet[Constraint], level: Int, reason: Constraint): Option[Constraint] = {
     var emptyConstraint: Option[Constraint] = None
     //update state, level and reason
     if(value)

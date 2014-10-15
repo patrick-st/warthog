@@ -1,6 +1,8 @@
 package org.warthog.pbl.decisionprocedures
 
+import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.pbl.datastructures._
+import org.warthog.pbl.parsers.PBCompetitionReader
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -14,20 +16,24 @@ class CDCLLike {
   var level = 0
   val stack = mutable.Stack[PBLVariable]()
   var variables = mutable.HashMap[Int, PBLVariable]()
-  var units = ListBuffer[Constraint]()
+  var units = mutable.HashSet[Constraint]()
   var occurrences = mutable.HashMap[PBLVariable, Int]()
 
   def this(instance: List[Constraint], variables: mutable.HashMap[Int, PBLVariable]) {
     this()
     this.instance = instance.map { c =>
       c.initWatchedLiterals match {
-        case ConstraintState.UNIT => this.units :+= c
+        case ConstraintState.UNIT => this.units += c
         case _ =>
       }
       c
     }
     this.variables = variables
     this.occurrences = this.computeOccurrences(instance)
+    //set the initial activity of the variables
+    occurrences.keySet.map{v =>
+      v.activity = occurrences.get(v).get
+    }
   }
 
   /**
@@ -52,6 +58,8 @@ class CDCLLike {
             case Some(v) => {
               this.level += 1
               v.assign(false, units, level, null)
+              //update activity
+              this.variables.values.map(_.activity *= 0.95)
               this.stack.push(v)
             }
           }
@@ -105,7 +113,7 @@ class CDCLLike {
           }
         }
         //remove unit
-        units = units.filter(!_.equals(unit))
+        units.remove(unit)
       }
     }
     None
@@ -122,6 +130,8 @@ class CDCLLike {
       return -1
     //compute the clause to learn
     var learnedClause = LearnUtil.learnClause(emptyClause, stack, level)
+    //update activity
+    learnedClause.terms.map(_.l.v.activity *= 1.1)
     //compute backtracking level
     for (t <- learnedClause.terms) {
       val level: Int = t.l.v.level
@@ -133,7 +143,7 @@ class CDCLLike {
     //add the learned clause to the instance
     instance +:= learnedClause
     //update the units
-    units = ListBuffer[Constraint](learnedClause)
+    units = mutable.HashSet[Constraint](learnedClause)
     //if learnedClause has only one literal
     if (learnedClause.terms.size == 1)
       return 0
@@ -177,7 +187,7 @@ class CDCLLike {
       None
     } else {
       //find the variable with highest occurrence
-      Some(openVars.maxBy(this.occurrences.get(_).get))
+      Some(openVars.maxBy(_.activity))
     }
   }
 
@@ -219,7 +229,5 @@ class CDCLLike {
       case _ => c
     }
   }
-
 }
-
 
