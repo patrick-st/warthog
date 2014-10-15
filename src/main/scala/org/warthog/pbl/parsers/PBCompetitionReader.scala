@@ -15,6 +15,9 @@ import scala.collection.mutable.ListBuffer
 object PBCompetitionReader {
   var variables = new mutable.HashMap[Int, PBLVariable]()
 
+  def getInstance(path: String) = {
+    (this.readCompetitionFormat(path)._1, variables)
+  }
   /**
    * Read a File in Pseudo-Boolean Competition format
    * @param path path of the source
