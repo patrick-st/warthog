@@ -123,9 +123,9 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * @return true if the constraint is unit else false
    */
   private def isUnit(): Boolean = {
-      val openLiterals = watchedLiterals.filter { t => t.l.v.state == State.OPEN}.size
-      val trueLiterals = watchedLiterals.filter{t => t.l.evaluates2True}.size
-      openLiterals == degree && trueLiterals < degree
+      val openLiterals = watchedLiterals.count{_.l.v.state == State.OPEN}
+      val trueLiterals = watchedLiterals.count{_.l.evaluates2True}
+      openLiterals + trueLiterals == degree && trueLiterals < degree
 
   }
 
@@ -134,7 +134,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * @return true if the constraint is satisfied else false
    */
   private def isSat(): Boolean = {
-    watchedLiterals.filter{t => t.l.evaluates2True}.size >= degree
+    watchedLiterals.count{_.l.evaluates2True} >= degree
   }
 }
 
