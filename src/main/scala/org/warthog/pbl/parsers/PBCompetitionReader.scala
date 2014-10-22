@@ -182,8 +182,8 @@ object PBCompetitionReader {
    * @return true if the constraint is a cardinality constraint else false
    */
   private def isCardinalityConstraint(terms: List[PBLTerm]):Boolean ={
-    val coefficient = terms(0).a
-    terms.forall(_.a == coefficient)
+    val coefficient = terms(0).a.abs
+    terms.forall(_.a.abs == coefficient)
   }
 }
 
