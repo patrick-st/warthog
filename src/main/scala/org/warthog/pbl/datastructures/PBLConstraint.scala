@@ -40,7 +40,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    * @return true if constraint is unit else false
    */
   def isUnit(): Boolean = {
-    if(currentSum > degree)
+    if(currentSum >= degree)
       false
     else {
       for (t <- terms) {
@@ -92,29 +92,29 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   private def getCurrentState: ConstraintState.Value = {
     if(slack < 0)
       ConstraintState.EMPTY
+    else if(currentSum >= degree)
+    ConstraintState.SAT
     else if(this.isUnit)
       ConstraintState.UNIT
-    else if(currentSum >= degree)
-      ConstraintState.SAT
     else ConstraintState.SUCCESS
   }
 
   def updateSlack = {
-    this.slack = terms.foldLeft(List[BigInt]()){(list,term) =>
+    this.slack = terms.foldLeft(BigInt(0)){(sum,term) =>
       if(!term.l.evaluates2False)
-        list :+ term.a
+        sum + term.a
       else
-        list
-    }.sum - degree
+        sum
+    } - degree
   }
 
   def updateCurrentSum = {
-    this.currentSum = terms.foldLeft(List[BigInt]()){(list, term) =>
+    this.currentSum = terms.foldLeft(BigInt(0)){(sum, term) =>
       if(term.l.evaluates2True)
-        list :+ term.a
+        sum + term.a
       else
-        list
-    }.sum
+        sum
+    }
   }
 }
 
