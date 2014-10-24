@@ -92,9 +92,9 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
   private def getCurrentState: ConstraintState.Value = {
     if(slack < 0)
       ConstraintState.EMPTY
-    else if(currentSum >= degree)
-    ConstraintState.SAT
-    else if(this.isUnit)
+    if(currentSum >= degree)
+      ConstraintState.SAT
+     if(this.isUnit)
       ConstraintState.UNIT
     else ConstraintState.SUCCESS
   }
