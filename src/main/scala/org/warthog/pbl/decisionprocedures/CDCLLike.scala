@@ -29,11 +29,6 @@ class CDCLLike {
       c
     }
     this.variables = variables
-    this.occurrences = this.computeOccurrences(instance)
-    //set the initial activity of the variables
-    occurrences.keySet.map{v =>
-      v.activity = occurrences.get(v).get
-    }
   }
 
   /**
@@ -131,7 +126,7 @@ class CDCLLike {
     //compute the clause to learn
     var learnedClause = LearnUtil.learnClause(emptyClause, stack, level)
     //update activity
-    learnedClause.terms.map(_.l.v.activity *= 1.1)
+    learnedClause.terms.map(_.l.v.activity += 1)
     //compute backtracking level
     for (t <- learnedClause.terms) {
       val level: Int = t.l.v.level
@@ -230,4 +225,3 @@ class CDCLLike {
     }
   }
 }
-
