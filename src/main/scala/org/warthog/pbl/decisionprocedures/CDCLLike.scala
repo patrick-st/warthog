@@ -226,11 +226,3 @@ class CDCLLike {
   }
 }
 
-object Main{
-  def main(args: Array[String]) {
-    val instance = PBCompetitionReader.getInstance("src\\test\\resources\\pbcompetition\\normalized-188.opb")
-    val solver = new CDCLLike(instance._1,instance._2)
-    println(solver.instance.size)
-    solver.solve
-  }
-}
