@@ -87,9 +87,9 @@ object C {
   val unitConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(2,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 3)
   val satConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
 
-  val emptyCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 2)
-  val unitCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 2)
-  val satCardinalityConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
+  val emptyCardinalityConstraint = new PBLCardinalityConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 2)
+  val unitCardinalityConstraint = new PBLCardinalityConstraint(List[PBLTerm](new PBLTerm(1,new PBLLiteral(x3)),new PBLTerm(1,new PBLLiteral(x4))), 2)
+  val satCardinalityConstraint = new PBLCardinalityConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 0)
 
   //objective function
   val objectiveFunction = List[PBLTerm](

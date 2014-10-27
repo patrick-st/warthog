@@ -66,7 +66,13 @@ class PBLConstraintTest extends Specification {
 
   "After assigning x2 to false, c1" should {
     "be empty" in {
-      C.x2.assign(false, units, 1, null) == Some(C.c1)
+     C.x2.assign(false, units, 1, null) == Some(C.c1)
+    }
+    "have a slack of -2" in {
+      C.c1.slack must be equalTo -2
+    }
+    "have a currentSum of 0" in {
+      C.c1.currentSum must be equalTo 0
     }
   }
 

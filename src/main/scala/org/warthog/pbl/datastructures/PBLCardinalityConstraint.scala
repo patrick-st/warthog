@@ -44,7 +44,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
       //add clause to watchedList of all variables
       terms.map(_.l.v.add(this))
       ConstraintState.UNIT
-    } else if(degree < 0)
+    } else if(degree <= 0)
       ConstraintState.SAT
     else {
       var i = 0
