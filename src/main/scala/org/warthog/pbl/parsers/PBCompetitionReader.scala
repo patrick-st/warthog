@@ -13,17 +13,20 @@ import scala.collection.mutable.ListBuffer
  * http://www.cril.univ-artois.fr/PB12/format.pdf
  */
 object PBCompetitionReader {
-  var variables = new mutable.HashMap[Int, PBLVariable]()
+
 
   def getInstance(path: String) = {
-    (this.readCompetitionFormat(path)._1, variables)
+    val instance = this.readCompetitionFormat(path)
+    (instance._1,instance._3)
+
   }
   /**
    * Read a File in Pseudo-Boolean Competition format
    * @param path path of the source
    * @return a pair containing a list of all constraints an the objective function
    */
-  def readCompetitionFormat(path: String): (List[Constraint], Option[List[PBLTerm]]) = {
+  def readCompetitionFormat(path: String): (List[Constraint], Option[List[PBLTerm]],mutable.HashMap[Int, PBLVariable]) = {
+    var variables = new mutable.HashMap[Int, PBLVariable]()
     var preambleRead = false
     var numberOfConstraintsInPreamble = 0
     var numberOfVarsInPreamble = 0
@@ -50,12 +53,12 @@ object PBCompetitionReader {
             } else if (preambleRead && line.contains("#variable="))
               System.err.println("Line " + lineNumber + ": More than one preamble --> Use the first")
           case 'm' =>
-            if(line.endsWith(";")) objectiveFunction = Some(parseObjective(line))
+            if(line.endsWith(";")) objectiveFunction = Some(parseObjective(line, variables))
             else System.err.println("Line " + lineNumber + ": Line doesn't end with ';' --> Skip line")
           case _ =>
             if(line.endsWith(";")){
               try {
-                parseConstraint(line) match {
+                parseConstraint(line, variables) match {
                   case (c, None) => constraints += c
                   case (c1, Some(c2)) => constraints += c1; constraints += c2; numberOfEqualityConstraints += 1
                 }
@@ -67,14 +70,14 @@ object PBCompetitionReader {
       }
     }
 
-    val vars = this.variables.size
+    val vars = variables.size
     if (preambleRead) {
       if (numberOfConstraintsInPreamble + numberOfEqualityConstraints != constraints.size)
         System.err.println("Number of Clauses in Preamble: " + numberOfConstraintsInPreamble + ", " + "Number of computed Clauses: " + (constraints.size - numberOfEqualityConstraints))
       if (numberOfVarsInPreamble != vars)
         System.err.println("Number of Vars in Preamble: " + numberOfVarsInPreamble + ", " + "Number of computed Vars: " + vars)
     }
-    (constraints.toList, objectiveFunction)
+    (constraints.toList, objectiveFunction, variables)
   }
 
 
@@ -85,7 +88,7 @@ object PBCompetitionReader {
    * @param line string representation of a constraint
    * @return the generated constraint
    */
-  private def parseConstraint(line: String): (Constraint, Option[Constraint]) = {
+  private def parseConstraint(line: String, variables: mutable.HashMap[Int, PBLVariable]): (Constraint, Option[Constraint]) = {
     //check if the line contains an '>=' or '=' constraint
     val equalOperator = !line.contains(">=")
     //split the line into left-hand and right-hand side
@@ -98,7 +101,7 @@ object PBCompetitionReader {
     val terms = termRegex.findAllIn(lhs).duplicate
     val termList = terms._1.foldLeft(ListBuffer[PBLTerm]()){
       try {
-        _ += string2Term(_)
+        _ += string2Term(_, variables)
       } catch {
         case e: NumberFormatException => throw e
       }
@@ -115,7 +118,7 @@ object PBCompetitionReader {
     val option = if (equalOperator) {
       val termList2 = terms._2.foldLeft(ListBuffer[PBLTerm]()) {
         try {
-          _ += string2Term(_)
+          _ += string2Term(_, variables)
         } catch {
           case e: NumberFormatException => throw e
         }
@@ -139,10 +142,10 @@ object PBCompetitionReader {
    * @param line string representation of the objective function
    * @return a list of terms
    */
-  private def parseObjective(line: String) = {
+  private def parseObjective(line: String, variables: mutable.HashMap[Int, PBLVariable]) = {
     val termRegex = "[-|+]?\\s*\\d+\\s*x\\d+".r
     val terms = termRegex.findAllIn(line.replace("min:", ""))
-    terms.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_)).toList
+    terms.foldLeft(ListBuffer[PBLTerm]())(_ += string2Term(_, variables)).toList
   }
 
   /**
@@ -150,7 +153,7 @@ object PBCompetitionReader {
    * @param term the string representation of a term
    * @return
    */
-  private def string2Term(term: String): PBLTerm = {
+  private def string2Term(term: String, variables: mutable.HashMap[Int, PBLVariable]): PBLTerm = {
     val splitted = term.trim.split("\\s+")
     var variableName = ""
     var variableID = 0
