@@ -35,12 +35,12 @@ object LearnUtil {
    * @param level the current level
    * @return the new clause to learn
    */
- private def learn(reduce1: (Constraint, PBLVariable) => Constraint, reduce2: (Constraint, PBLVariable) => Constraint,
-             resolve: (Constraint,Constraint,PBLVariable) => Constraint,
-             conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
+  private def learn(reduce1: (Constraint, PBLVariable) => Constraint, reduce2: (Constraint, PBLVariable) => Constraint,
+                    resolve: (Constraint,Constraint,PBLVariable) => Constraint,
+                    conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
 
-   var c1 = conflict
-   //resolve the conflict until the resolvent is 1UIP
+    var c1 = conflict
+    //resolve the conflict until the resolvent is 1UIP
     while(!stack.isEmpty){
       val v = stack.pop()
       c1 = reduce1(c1,v)
@@ -62,7 +62,7 @@ object LearnUtil {
    *          because over this variable will be resolved
    * @return the reduced clause
    */
-   private def reduce2Clause(c: Constraint, v: PBLVariable): Constraint = {
+  private def reduce2Clause(c: Constraint, v: PBLVariable): Constraint = {
     if (c.isInstanceOf[PBLCardinalityConstraint] && c.asInstanceOf[PBLCardinalityConstraint].degree == 1) {
       c.copy
     } else {
@@ -85,7 +85,7 @@ object LearnUtil {
    * @param c2 second constraint
    * @return true if c1 and c2 are resolvable else false
    */
-   private def isResolvable(c1: Constraint, c2: Constraint, v: PBLVariable): Boolean ={
+  private def isResolvable(c1: Constraint, c2: Constraint, v: PBLVariable): Boolean ={
     var t1: PBLLiteral = null
     var t2: PBLLiteral = null
     val existsC1 = c1.terms.exists{t => t1 = t.l; t.l.v == v}
@@ -106,7 +106,7 @@ object LearnUtil {
   private def resolve(c1: Constraint, c2: Constraint, v: PBLVariable) = {
     if(this.isResolvable(c1,c2,v)){
       val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy )
-      new PBLCardinalityConstraint(newTerms, 1)
+      new PBLCardinalityConstraint(newTerms, 1, true)
     } else {
       c1
     }
