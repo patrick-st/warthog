@@ -39,7 +39,6 @@ object LearnUtil {
              resolve: (Constraint,Constraint,PBLVariable) => Constraint,
              conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
 
-   var variablesToUnassign = new ArrayBuffer[PBLVariable]()
    var c1 = conflict
    //resolve the conflict until the resolvent is 1UIP
     while(!stack.isEmpty){
@@ -47,9 +46,8 @@ object LearnUtil {
       c1 = reduce1(c1,v)
       val c2 = reduce2(v.reason, v)
       c1 = this.resolve(c1, c2, v)
-      variablesToUnassign += v
+      v.unassign()
       if(this.is1UIP(c1, level)){
-        variablesToUnassign.map(_.unassign())
         return c1
       }
     }
