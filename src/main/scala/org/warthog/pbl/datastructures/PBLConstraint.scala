@@ -6,7 +6,7 @@ package org.warthog.pbl.datastructures
  * @param terms terms of the left-hand side
  * @param degree the right-hand side
  */
-class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constraint(terms, degree){
+class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var learned: Boolean = false) extends Constraint(terms, degree, learned){
   //sum of all coefficients a_i where l_i evaluates to true
   var currentSum: BigInt = 0
   //sum of all coefficients a_i where l_i not evaluates to true (l_i = false or open)
@@ -17,7 +17,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree)
+  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.learned)
 
   /**
    * Initialize the watched literals.
@@ -63,13 +63,13 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
       //literal evaluates to true => currentSum has to be updated
       if(t.l.phase == value){
         currentSum += t.a
-      //literal evaluates to false => slack has to be updated
+        //literal evaluates to false => slack has to be updated
       } else {
         slack -= t.a
       }
     }
     //return the current state
-   getCurrentState
+    getCurrentState
   }
 
   /**
@@ -94,7 +94,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
       return ConstraintState.EMPTY
     if(currentSum >= degree)
       return ConstraintState.SAT
-     if(this.isUnit)
+    if(this.isUnit)
       return ConstraintState.UNIT
     else ConstraintState.SUCCESS
   }

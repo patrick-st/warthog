@@ -17,12 +17,14 @@ abstract class Constraint (){
   var terms :  List[PBLTerm]
   //right-hand side of the constraint
   var degree : BigInt
+  //is this a learned constraint or not
+  var learned: Boolean
 
-
-  def this(terms: List[PBLTerm], degree: BigInt){
+  def this(terms: List[PBLTerm], degree: BigInt, learned: Boolean = false){
     this()
     this.terms = terms
     this.degree = degree
+    this.learned = learned
     normalize()
   }
 

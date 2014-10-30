@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param terms left-hand side of the constraint
  * @param degree right-hand side of the constraint
  */
-class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) extends Constraint(terms, degree){
+class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, var learned: Boolean = false) extends Constraint(terms, degree, learned){
   reduceCoefficients()
 
   var watchedLiterals = new ArrayBuffer[PBLTerm](degree.+(1).toInt)
@@ -28,7 +28,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree)
+  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.learned)
 
   /**
    * Initialize the watched literals.
@@ -54,7 +54,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
         t.l.v.add(this)
         i += 1
         i > degree
-     }
+      }
       ConstraintState.SUCCESS
     }
 
@@ -82,8 +82,8 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
           return ConstraintState.SUCCESS
         }
         case None => {
-            if(this.isUnit()) return ConstraintState.UNIT
-            if(this.isSat()) return ConstraintState.SAT
+          if(this.isUnit()) return ConstraintState.UNIT
+          if(this.isSat()) return ConstraintState.SAT
         }
       }
       return ConstraintState.EMPTY
@@ -123,9 +123,9 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt) e
    * @return true if the constraint is unit else false
    */
   private def isUnit(): Boolean = {
-      val openLiterals = watchedLiterals.count{_.l.v.state == State.OPEN}
-      val trueLiterals = watchedLiterals.count{_.l.evaluates2True}
-      openLiterals + trueLiterals == degree && trueLiterals < degree
+    val openLiterals = watchedLiterals.count{_.l.v.state == State.OPEN}
+    val trueLiterals = watchedLiterals.count{_.l.evaluates2True}
+    openLiterals + trueLiterals == degree && trueLiterals < degree
 
   }
 
