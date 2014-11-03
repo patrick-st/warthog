@@ -12,15 +12,34 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 class CDCLLike {
 
   var instance = List[Constraint]()
-  val objectiveFunction = List[PBLTerm]()
+  var objectiveFunction: Constraint = null
+  var optimum: BigInt = null
   var level = 0
-  val stack = mutable.Stack[PBLVariable]()
+  var stack = mutable.Stack[PBLVariable]()
   var variables = mutable.HashMap[Int, PBLVariable]()
   var units = mutable.HashSet[Constraint]()
   var occurrences = mutable.HashMap[PBLVariable, Int]()
 
-  def this(instance: List[Constraint], variables: mutable.HashMap[Int, PBLVariable]) {
+  def this(instance: List[Constraint], objective: Option[List[PBLTerm]], variables: mutable.HashMap[Int, PBLVariable]) {
     this()
+    this.variables = variables
+    // add the objectiveFunction
+    if(objective != None) {
+      val objectiveFunction = objective.get
+      //compute the right-hand side of the objective function
+      val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
+      objectiveFunction.map(_.a *= -1)
+      //check if objective function is cardinality
+      if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
+        this.objectiveFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
+        this.instance +:= this.objectiveFunction
+      } else {
+        this.objectiveFunction = new PBLConstraint(objectiveFunction, -rhs)
+        this.instance +:= this.objectiveFunction
+      }
+    }
+
+    //set the instance
     this.instance = instance.map { c =>
       c.initWatchedLiterals match {
         case ConstraintState.UNIT => this.units += c
@@ -28,9 +47,26 @@ class CDCLLike {
       }
       c
     }
-    this.variables = variables
   }
 
+
+  /**
+   * Main entry point for linear optimizing the given instance
+   */
+  def linearOptimize() = {
+    while(this.solve){
+      //compute the current optimum
+      val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+      //remove the old objective function
+      this.instance.filter(_ != this.objectiveFunction)
+      //update the objective function
+      this.objectiveFunction.degree = opt + 1
+      this.optimum = opt
+      //add the updated objective function to the instance
+      this.instance +:= objectiveFunction
+      this.reset()
+    }
+  }
   /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
@@ -62,6 +98,45 @@ class CDCLLike {
       }
     }
     false
+  }
+
+  /**
+   * Method resets the instance to the initial state
+   */
+  private def reset(): Unit = {
+    this.level = 0
+    this.stack = new mutable.Stack[PBLVariable]()
+    //reset all variables
+    this.variables.values.map{v =>
+      v.unassign()
+      v.reason = null
+      v.activity = 0
+      v.watched = new ListBuffer[Constraint]()
+    }
+    //delete all learned Constraints
+    this.instance = this.instance.filterNot(_.learned)
+
+    this.units =  mutable.HashSet[Constraint]()
+    //reset all constraints and init the watched literals
+    this.instance.map{c =>
+      c match {
+        case cardinality: PBLCardinalityConstraint => {
+          cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
+          cardinality.initWatchedLiterals() match {
+            case ConstraintState.UNIT => this.units += cardinality
+            case _ =>
+          }
+        }
+        case constraint: PBLConstraint => {
+          constraint.currentSum = 0
+          constraint.slack = 0
+          constraint.initWatchedLiterals() match {
+            case ConstraintState.UNIT => this.units += constraint
+            case _ =>
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -119,7 +194,7 @@ class CDCLLike {
    * @param emptyClause the conflict
    * @return the backtrack level
    */
- private def analyzeConflict(emptyClause: Constraint): Int = {
+  private def analyzeConflict(emptyClause: Constraint): Int = {
     var backtrackLevel = -1
     if (this.level == 0)
       return -1
@@ -225,4 +300,3 @@ class CDCLLike {
     }
   }
 }
-
