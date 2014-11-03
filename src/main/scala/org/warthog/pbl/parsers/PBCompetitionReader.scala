@@ -17,7 +17,7 @@ object PBCompetitionReader {
 
   def getInstance(path: String) = {
     val instance = this.readCompetitionFormat(path)
-    (instance._1,instance._3)
+    (instance._1,instance._2,instance._3)
 
   }
   /**
@@ -26,7 +26,7 @@ object PBCompetitionReader {
    * @return a pair containing a list of all constraints an the objective function
    */
   def readCompetitionFormat(path: String): (List[Constraint], Option[List[PBLTerm]],mutable.HashMap[Int, PBLVariable]) = {
-    var variables = new mutable.HashMap[Int, PBLVariable]()
+    val variables = new mutable.HashMap[Int, PBLVariable]()
     var preambleRead = false
     var numberOfConstraintsInPreamble = 0
     var numberOfVarsInPreamble = 0
