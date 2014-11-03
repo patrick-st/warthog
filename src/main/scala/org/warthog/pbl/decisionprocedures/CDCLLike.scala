@@ -23,6 +23,7 @@ class CDCLLike {
   def this(instance: List[Constraint], objective: Option[List[PBLTerm]], variables: mutable.HashMap[Int, PBLVariable]) {
     this()
     this.variables = variables
+    this.instance = instance
     // add the objectiveFunction
     if(objective != None) {
       val objectiveFunction = objective.get
@@ -32,15 +33,12 @@ class CDCLLike {
       //check if objective function is cardinality
       if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
         this.objectiveFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
-        this.instance +:= this.objectiveFunction
       } else {
         this.objectiveFunction = new PBLConstraint(objectiveFunction, -rhs)
-        this.instance +:= this.objectiveFunction
       }
     }
-
-    //set the instance
-    this.instance = instance.map { c =>
+    //init the watched literals
+    this.instance.map { c =>
       c.initWatchedLiterals match {
         case ConstraintState.UNIT => this.units += c
         case _ =>
@@ -54,11 +52,18 @@ class CDCLLike {
    * Main entry point for linear optimizing the given instance
    */
   def linearOptimize() = {
+    //add the objectiveFunction to the instance
+    objectiveFunction.initWatchedLiterals match {
+      case ConstraintState.UNIT => this.units += objectiveFunction
+      case _ =>
+    }
+    this.instance +:= objectiveFunction
+    //start to optimize
     while(this.solve){
       //compute the current optimum
       val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
       //remove the old objective function
-      this.instance.filter(_ != this.objectiveFunction)
+      this.instance = this.instance.filter(_ != this.objectiveFunction)
       //update the objective function
       this.objectiveFunction.degree = opt + 1
       this.optimum = opt
@@ -67,6 +72,7 @@ class CDCLLike {
       this.reset()
     }
   }
+
   /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
