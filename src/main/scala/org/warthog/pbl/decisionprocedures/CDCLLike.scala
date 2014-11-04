@@ -49,9 +49,50 @@ class CDCLLike {
 
 
   /**
+   * Main entry point for optimizing the given instance by binary search
+   */
+  def binarySearchOptimisation() = {
+    //determine upper and lower bound for binary search
+    var upper = this.objectiveFunction.terms.map(_.a).sum
+    var lower = this.objectiveFunction.degree
+    while(lower <= upper){
+      val middle = (lower + upper) / 2
+      //enforce  objectiveFunction >= middle
+      var upperConstraint = this.objectiveFunction.copy
+      upperConstraint.degree = middle
+      upperConstraint.initWatchedLiterals match {
+        case ConstraintState.UNIT => this.units += upperConstraint
+        case _ =>
+      }
+      //enforce objectiveFunction <= upper
+      var lowerConstraint = this.objectiveFunction.copy
+      lowerConstraint.degree = upper
+      //normalize the lowerConstraint
+      lowerConstraint * -1
+      lowerConstraint.normalize()
+      lowerConstraint.initWatchedLiterals match {
+        case ConstraintState.UNIT => this.units += lowerConstraint
+        case _ =>
+      }
+      //add the constraints to the instance
+      this.instance +:= upperConstraint
+      this.instance +:= lowerConstraint
+      if(this.solve){
+        val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+        this.optimum = opt
+        lower = middle + 1
+      } else {
+        upper = this.optimum-1
+      }
+      this.reset()
+    }
+  }
+
+
+  /**
    * Main entry point for optimizing the given instance by linear search
    */
-  def linearSearchOptimization() = {
+  def linearSearchOptimisation() = {
     //add the objectiveFunction to the instance
     val objective = this.objectiveFunction.copy
     objective.initWatchedLiterals match {
