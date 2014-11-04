@@ -5,9 +5,9 @@ organization := "org.warthog"
 version := "0.1-SNAPSHOT"
 
 libraryDependencies ++= Seq(
-  "org.specs2" %% "specs2" % "2.3.10",
-  "net.java.dev.jna" % "jna" % "3.3.0",
-  "org.scalacheck" %% "scalacheck" % "1.10.0" % "test")
+    "org.specs2" %% "specs2" % "2.3.10",
+    "net.java.dev.jna" % "jna" % "4.1.0",
+    "org.scalacheck" %% "scalacheck" % "1.10.0" % "test")
 
 resolvers ++= Seq(
   "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
@@ -26,4 +26,4 @@ initialCommands in console := """
     import org.warthog.fol.formulas._
     import org.warthog.pl.parsers.tptp._
     import org.warthog.fol.parsers.tptp._
-                              """
+"""
