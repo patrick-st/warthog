@@ -49,26 +49,23 @@ class CDCLLike {
 
 
   /**
-   * Main entry point for linear optimizing the given instance
+   * Main entry point for optimizing the given instance by linear search
    */
-  def linearOptimize() = {
+  def linearSearchOptimization() = {
     //add the objectiveFunction to the instance
-    objectiveFunction.initWatchedLiterals match {
-      case ConstraintState.UNIT => this.units += objectiveFunction
+    val objective = this.objectiveFunction.copy
+    objective.initWatchedLiterals match {
+      case ConstraintState.UNIT => this.units += objective
       case _ =>
     }
-    this.instance +:= objectiveFunction
+    this.instance +:= objective
     //start to optimize
     while(this.solve){
       //compute the current optimum
       val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-      //remove the old objective function
-      this.instance = this.instance.filter(_ != this.objectiveFunction)
       //update the objective function
-      this.objectiveFunction.degree = opt + 1
+      objective.degree = opt + 1
       this.optimum = opt
-      //add the updated objective function to the instance
-      this.instance +:= objectiveFunction
       this.reset()
     }
   }
