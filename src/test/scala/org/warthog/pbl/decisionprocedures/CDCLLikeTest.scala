@@ -130,11 +130,21 @@ class CDCLLikeTest extends Specification {
     }
   }
 
-  "Optomization of pseudo-boolean formulas" should {
+  "Optimisation by linear search  of pseudo-boolean formulas" should {
     "be 6 for formula f10.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f10.cnf.opb"))
       val solver = new CDCLLike(instance._1, instance._2, instance._3)
-      solver.linearOptimize()
+      solver.linearSearchOptimisation()
+      solver.optimum == 6
+    }
+  }
+
+
+  "Optimisation by binary search  of pseudo-boolean formulas" should {
+    "be 6 for formula f10.cnf" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("f10.cnf.opb"))
+      val solver = new CDCLLike(instance._1, instance._2, instance._3)
+      solver.binarySearchOptimisation()
       solver.optimum == 6
     }
   }
