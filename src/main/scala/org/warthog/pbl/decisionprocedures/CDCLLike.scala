@@ -82,7 +82,6 @@ class CDCLLike {
     //add the constraints to the instance
     this.instance +:= lowerBoundConstraint
     this.instance +:= upperBoundConstraint
-
     while(lower <= upper){
       if(this.solve){
         //update max and minOptimum
@@ -96,8 +95,7 @@ class CDCLLike {
       }
       middle = (lower + upper) / 2
       //update the constraints
-      this.instance = this.instance.filter( _ != upperBoundConstraint)
-
+      this.instance = this.instance.filter(_ != upperBoundConstraint)
       lowerBoundConstraint.degree = middle
       upperBoundConstraint = this.computeUpperBoundConstraint(upper)
       this.instance +:= upperBoundConstraint
@@ -105,16 +103,17 @@ class CDCLLike {
     }
   }
 
+
   /**
    * Method computes the constraint to enforce objective function <= upper bound
    * @param degree the upper bound
    * @return the constraint
    */
   private def computeUpperBoundConstraint(degree: BigInt): Constraint = {
-    val terms = this.minimizeFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    val terms = this.maximizeFunction.terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     terms.map(_.a *= -1)
     //check if constraint is cardinality or not
-    if(minimizeFunction.forall(_.a.abs == minimizeFunction(0).a.abs)){
+    if(maximizeFunction.terms.forall(_.a.abs == maximizeFunction.terms(0).a.abs)){
       new PBLCardinalityConstraint(terms, -degree)
     } else {
       new PBLConstraint(terms, -degree)
@@ -377,3 +376,4 @@ class CDCLLike {
     }
   }
 }
+
