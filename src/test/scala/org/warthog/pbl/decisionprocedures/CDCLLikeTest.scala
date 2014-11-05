@@ -131,11 +131,17 @@ class CDCLLikeTest extends Specification {
   }
 
   "Optimisation by linear search  of pseudo-boolean formulas" should {
-    "be 6 for formula f10.cnf" in {
+    "be 3 for formula f10.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f10.cnf.opb"))
       val solver = new CDCLLike(instance._1, instance._2, instance._3)
       solver.linearSearchOptimisation()
-      solver.optimum == 6
+      solver.minOptimum == 3
+    }
+    "be 34 for formula normalized-mps-v2" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2.opb"))
+      val solver = new CDCLLike(instance._1, instance._2, instance._3)
+      solver.linearSearchOptimisation()
+      solver.minOptimum == 34
     }
   }
 
@@ -145,7 +151,13 @@ class CDCLLikeTest extends Specification {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f10.cnf.opb"))
       val solver = new CDCLLike(instance._1, instance._2, instance._3)
       solver.binarySearchOptimisation()
-      solver.optimum == 6
+      solver.minOptimum == 3
+    }
+    "be 34 for formula normalized-mps-v2" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2.opb"))
+      val solver = new CDCLLike(instance._1, instance._2, instance._3)
+      solver.binarySearchOptimisation()
+      solver.minOptimum == 34
     }
   }
 }
