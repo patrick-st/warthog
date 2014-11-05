@@ -12,8 +12,14 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 class CDCLLike {
 
   var instance = List[Constraint]()
-  var objectiveFunction: Constraint = null
-  var optimum: BigInt = null
+  //the original parsed minimisation function of the opb-file
+  var minimizeFunction: List[PBLTerm] = null
+  //the computed maximisation function out of the minimisation function
+  var maximizeFunction: Constraint = null
+  // the optimum computed by the minimisation function
+  var minOptimum: BigInt = null
+  // the optimum computed by the maximisation function
+  var maxOptimum: BigInt = null
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
   var variables = mutable.HashMap[Int, PBLVariable]()
@@ -26,15 +32,16 @@ class CDCLLike {
     this.instance = instance
     // add the objectiveFunction
     if(objective != None) {
+      this.minimizeFunction = objective.get.foldLeft(List[PBLTerm]())(_ :+ _.copy)
       val objectiveFunction = objective.get
       //compute the right-hand side of the objective function
       val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
       objectiveFunction.map(_.a *= -1)
       //check if objective function is cardinality
       if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
-        this.objectiveFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
+        this.maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
       } else {
-        this.objectiveFunction = new PBLConstraint(objectiveFunction, -rhs)
+        this.maximizeFunction = new PBLConstraint(objectiveFunction, -rhs)
       }
     }
     //init the watched literals
@@ -47,44 +54,70 @@ class CDCLLike {
     }
   }
 
+  def this(instance: (List[Constraint], Option[List[PBLTerm]], mutable.HashMap[Int, PBLVariable])) {
+    this(instance._1, instance._2, instance._3)
+  }
 
   /**
    * Main entry point for optimizing the given instance by binary search
    */
   def binarySearchOptimisation() = {
     //determine upper and lower bound for binary search
-    var upper = this.objectiveFunction.terms.map(_.a).sum
-    var lower = this.objectiveFunction.degree
+    var upper = this.maximizeFunction.terms.map(_.a).sum
+    var lower = this.maximizeFunction.degree
+    var middle = (lower + upper) / 2
+    //enforce  objectiveFunction >= middle
+    var lowerBoundConstraint = this.maximizeFunction.copy
+    lowerBoundConstraint.degree = middle
+    lowerBoundConstraint.initWatchedLiterals match {
+      case ConstraintState.UNIT => this.units += lowerBoundConstraint
+      case _ =>
+    }
+    //enforce objectiveFunction <= upper
+    var upperBoundConstraint = this.computeUpperBoundConstraint(upper)
+    upperBoundConstraint.initWatchedLiterals match {
+      case ConstraintState.UNIT => this.units += upperBoundConstraint
+      case _ =>
+    }
+    //add the constraints to the instance
+    this.instance +:= lowerBoundConstraint
+    this.instance +:= upperBoundConstraint
+
     while(lower <= upper){
-      val middle = (lower + upper) / 2
-      //enforce  objectiveFunction >= middle
-      var upperConstraint = this.objectiveFunction.copy
-      upperConstraint.degree = middle
-      upperConstraint.initWatchedLiterals match {
-        case ConstraintState.UNIT => this.units += upperConstraint
-        case _ =>
-      }
-      //enforce objectiveFunction <= upper
-      var lowerConstraint = this.objectiveFunction.copy
-      lowerConstraint.degree = upper
-      //normalize the lowerConstraint
-      lowerConstraint * -1
-      lowerConstraint.normalize()
-      lowerConstraint.initWatchedLiterals match {
-        case ConstraintState.UNIT => this.units += lowerConstraint
-        case _ =>
-      }
-      //add the constraints to the instance
-      this.instance +:= upperConstraint
-      this.instance +:= lowerConstraint
       if(this.solve){
-        val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-        this.optimum = opt
-        lower = middle + 1
+        //update max and minOptimum
+        this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+        this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
+        //update the new lower bound
+        lower = this.maxOptimum + 1
       } else {
-        upper = this.optimum-1
+        //update the new upper bound
+        upper = middle-1
       }
+      middle = (lower + upper) / 2
+      //update the constraints
+      this.instance = this.instance.filter( _ != upperBoundConstraint)
+
+      lowerBoundConstraint.degree = middle
+      upperBoundConstraint = this.computeUpperBoundConstraint(upper)
+      this.instance +:= upperBoundConstraint
       this.reset()
+    }
+  }
+
+  /**
+   * Method computes the constraint to enforce objective function <= upper bound
+   * @param degree the upper bound
+   * @return the constraint
+   */
+  private def computeUpperBoundConstraint(degree: BigInt): Constraint = {
+    val terms = this.minimizeFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    terms.map(_.a *= -1)
+    //check if constraint is cardinality or not
+    if(minimizeFunction.forall(_.a.abs == minimizeFunction(0).a.abs)){
+      new PBLCardinalityConstraint(terms, -degree)
+    } else {
+      new PBLConstraint(terms, -degree)
     }
   }
 
@@ -94,7 +127,7 @@ class CDCLLike {
    */
   def linearSearchOptimisation() = {
     //add the objectiveFunction to the instance
-    val objective = this.objectiveFunction.copy
+    val objective = this.maximizeFunction.copy
     objective.initWatchedLiterals match {
       case ConstraintState.UNIT => this.units += objective
       case _ =>
@@ -102,11 +135,11 @@ class CDCLLike {
     this.instance +:= objective
     //start to optimize
     while(this.solve){
-      //compute the current optimum
-      val opt = this.objectiveFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+      //update max and minOptimum
+      this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+      this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
       //update the objective function
-      objective.degree = opt + 1
-      this.optimum = opt
+      objective.degree = this.maxOptimum + 1
       this.reset()
     }
   }
