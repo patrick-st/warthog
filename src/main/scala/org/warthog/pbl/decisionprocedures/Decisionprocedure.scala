@@ -19,8 +19,8 @@ trait Decisionprocedure {
   def add(constraints: List[Constraint]): Unit
 
   /**
-   * Solve the added constraints and additional the given constraints
-   * @param constraints to solve additional
+   * Solve the added and additional given constraints
+   * @param constraints additional constraints to solve
    * @return true if all constraints are satisfiable else false
    */
   def solve(constraints: List[Constraint]): Boolean
