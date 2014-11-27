@@ -6,7 +6,7 @@ package org.warthog.pbl.datastructures
  * @param terms terms of the left-hand side
  * @param degree the right-hand side
  */
-class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var learned: Boolean = false) extends Constraint(terms, degree, learned){
+class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable){
   //sum of all coefficients a_i where l_i evaluates to true
   var currentSum: BigInt = 0
   //sum of all coefficients a_i where l_i not evaluates to true (l_i = false or open)
@@ -17,7 +17,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var learned: B
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.learned)
+  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.removable)
 
   /**
    * Initialize the watched literals.

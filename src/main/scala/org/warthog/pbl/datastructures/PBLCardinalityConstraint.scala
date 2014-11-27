@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param terms left-hand side of the constraint
  * @param degree right-hand side of the constraint
  */
-class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, var learned: Boolean = false) extends Constraint(terms, degree, learned){
+class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable){
   reduceCoefficients()
 
   var watchedLiterals = new ArrayBuffer[PBLTerm](degree.+(1).toInt)
@@ -28,7 +28,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.learned)
+  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.removable)
 
   /**
    * Initialize the watched literals.

@@ -17,14 +17,14 @@ abstract class Constraint (){
   var terms :  List[PBLTerm]
   //right-hand side of the constraint
   var degree : BigInt
-  //is this a learned constraint or not
-  var learned: Boolean
+  //is it allowed to remove the constraint from the instance or not
+  var removable: Boolean
 
-  def this(terms: List[PBLTerm], degree: BigInt, learned: Boolean = false){
+  def this(terms: List[PBLTerm], degree: BigInt, removable: Boolean = false){
     this()
     this.terms = terms
     this.degree = degree
-    this.learned = learned
+    this.removable = removable
     normalize()
   }
 
