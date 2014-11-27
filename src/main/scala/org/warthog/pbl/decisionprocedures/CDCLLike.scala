@@ -9,145 +9,71 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 /**
  * Implements a CDCL like approach to solve pseudo-boolean constraints
  */
-class CDCLLike {
+class CDCLLike extends Decisionprocedure {
 
   var instance = List[Constraint]()
-  //the original parsed minimisation function of the opb-file
-  var minimizeFunction: List[PBLTerm] = null
-  //the computed maximisation function out of the minimisation function
-  var maximizeFunction: Constraint = null
-  // the optimum computed by the minimisation function
-  var minOptimum: BigInt = null
-  // the optimum computed by the maximisation function
-  var maxOptimum: BigInt = null
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
   var variables = mutable.HashMap[Int, PBLVariable]()
   var units = mutable.HashSet[Constraint]()
-  var occurrences = mutable.HashMap[PBLVariable, Int]()
+  var containsEmptyConstraint = false
 
-  def this(instance: List[Constraint], objective: Option[List[PBLTerm]], variables: mutable.HashMap[Int, PBLVariable]) {
-    this()
-    this.variables = variables
-    this.instance = instance
-    // add the objectiveFunction
-    if(objective != None) {
-      this.minimizeFunction = objective.get.foldLeft(List[PBLTerm]())(_ :+ _.copy)
-      val objectiveFunction = objective.get
-      //compute the right-hand side of the objective function
-      val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
-      objectiveFunction.map(_.a *= -1)
-      //check if objective function is cardinality
-      if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
-        this.maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
-      } else {
-        this.maximizeFunction = new PBLConstraint(objectiveFunction, -rhs)
-      }
+
+  /**
+   * Adding a constraint to the instance
+   * @param c the constraint to add
+   */
+  def add(c: Constraint) = {
+    c.initWatchedLiterals match {
+      case ConstraintState.UNIT => this.units += c; this.instance ::= c
+      case ConstraintState.EMPTY => this.containsEmptyConstraint = true; this.instance ::=c
+      case ConstraintState.SUCCESS => this.instance ::= c
+      //ignore the sat constraints
+      case _  =>
     }
-    //init the watched literals
-    this.instance.map { c =>
+
+    //add the variables if necessary
+    c.terms.map {t =>
+        this.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
+    }
+  }
+
+  /**
+   * Adding a list of constraints to the instance
+   * @param constraintList the list to add
+   */
+  def add(constraintList: List[Constraint]) = {
+    //init watched literals and add the constraints to the instance
+    constraintList.map{c =>
       c.initWatchedLiterals match {
-        case ConstraintState.UNIT => this.units += c
-        case _ =>
+        case ConstraintState.UNIT => this.units += c; this.instance ::= c
+        case ConstraintState.EMPTY => this.containsEmptyConstraint = true; this.instance ::=c
+        case ConstraintState.SUCCESS => this.instance ::= c
+        //ignore the sat constraints
+        case _  =>
       }
-      c
-    }
-  }
-
-  def this(instance: (List[Constraint], Option[List[PBLTerm]], mutable.HashMap[Int, PBLVariable])) {
-    this(instance._1, instance._2, instance._3)
-  }
-
-  /**
-   * Main entry point for optimizing the given instance by binary search
-   */
-  def binarySearchOptimisation() = {
-    //determine upper and lower bound for binary search
-    var upper = this.maximizeFunction.terms.map(_.a).sum
-    var lower = this.maximizeFunction.degree
-    var middle = (lower + upper) / 2
-    //enforce  objectiveFunction >= middle
-    var lowerBoundConstraint = this.maximizeFunction.copy
-    lowerBoundConstraint.degree = middle
-    lowerBoundConstraint.initWatchedLiterals match {
-      case ConstraintState.UNIT => this.units += lowerBoundConstraint
-      case _ =>
-    }
-    //enforce objectiveFunction <= upper
-    var upperBoundConstraint = this.computeUpperBoundConstraint(upper)
-    upperBoundConstraint.initWatchedLiterals match {
-      case ConstraintState.UNIT => this.units += upperBoundConstraint
-      case _ =>
-    }
-    //add the constraints to the instance
-    this.instance +:= lowerBoundConstraint
-    this.instance +:= upperBoundConstraint
-    while(lower <= upper){
-      if(this.solve){
-        //update max and minOptimum
-        this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-        this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
-        //update the new lower bound
-        lower = this.maxOptimum + 1
-      } else {
-        //update the new upper bound
-        upper = middle-1
+      //add the variables if necessary
+      c.terms.map {t =>
+        this.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
       }
-      middle = (lower + upper) / 2
-      //update the constraints
-      this.instance = this.instance.filter(_ != upperBoundConstraint)
-      lowerBoundConstraint.degree = middle
-      upperBoundConstraint = this.computeUpperBoundConstraint(upper)
-      this.instance +:= upperBoundConstraint
-      this.reset()
     }
   }
 
-
-  /**
-   * Method computes the constraint to enforce objective function <= upper bound
-   * @param degree the upper bound
-   * @return the constraint
-   */
-  private def computeUpperBoundConstraint(degree: BigInt): Constraint = {
-    val terms = this.maximizeFunction.terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
-    terms.map(_.a *= -1)
-    //check if constraint is cardinality or not
-    if(maximizeFunction.terms.forall(_.a.abs == maximizeFunction.terms(0).a.abs)){
-      new PBLCardinalityConstraint(terms, -degree)
-    } else {
-      new PBLConstraint(terms, -degree)
-    }
-  }
-
-
-  /**
-   * Main entry point for optimizing the given instance by linear search
-   */
-  def linearSearchOptimisation() = {
-    //add the objectiveFunction to the instance
-    val objective = this.maximizeFunction.copy
-    objective.initWatchedLiterals match {
-      case ConstraintState.UNIT => this.units += objective
-      case _ =>
-    }
-    this.instance +:= objective
-    //start to optimize
-    while(this.solve){
-      //update max and minOptimum
-      this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-      this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
-      //update the objective function
-      objective.degree = this.maxOptimum + 1
-      this.reset()
-    }
-  }
 
   /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
    */
-  def solve: Boolean = {
+  def solve(constraints: List[Constraint]): Boolean = {
+    //enforce that all constraints are removable
+    constraints.map(_.removable = true)
+    //add the constraints to the instance
+    this.add(constraints)
+    //check if the instance contains an empty constraint
+    if(this.containsEmptyConstraint)
+      return false
+
+    //else try to solve the instance
     while (true) {
       this.unitPropagation match {
         case Some(c) => {
@@ -176,10 +102,11 @@ class CDCLLike {
     false
   }
 
+
   /**
    * Method resets the instance to the initial state
    */
-  private def reset(): Unit = {
+  def reset(): Unit = {
     this.level = 0
     this.stack = new mutable.Stack[PBLVariable]()
     //reset all variables
@@ -190,7 +117,7 @@ class CDCLLike {
       v.watched = new ListBuffer[Constraint]()
     }
     //delete all learned Constraints
-    this.instance = this.instance.filterNot(_.learned)
+    this.instance = this.instance.filterNot(_.removable)
 
     this.units =  mutable.HashSet[Constraint]()
     //reset all constraints and init the watched literals
