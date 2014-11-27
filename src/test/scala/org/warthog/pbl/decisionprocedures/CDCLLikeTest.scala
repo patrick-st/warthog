@@ -131,6 +131,16 @@ class CDCLLikeTest extends Specification {
       solver.reset()
       solver.solve(instance._1) must beFalse
     }
+    "be true for formula normalized-mps-v2" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2.opb"))
+      solver.reset()
+      solver.solve(instance._1) must beTrue
+    }
+    "be true for formula normalized-mps-v2-stein27" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2-stein27.opb"))
+      solver.reset()
+      solver.solve(instance._1) must beTrue
+    }
   }
 
 }
