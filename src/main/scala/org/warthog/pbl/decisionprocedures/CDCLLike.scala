@@ -31,11 +31,6 @@ class CDCLLike extends Decisionprocedure {
       //ignore the sat constraints
       case _  =>
     }
-
-    //add the variables if necessary
-    c.terms.map {t =>
-        this.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
-    }
   }
 
   /**
@@ -51,10 +46,6 @@ class CDCLLike extends Decisionprocedure {
         case ConstraintState.SUCCESS => this.instance ::= c
         //ignore the sat constraints
         case _  =>
-      }
-      //add the variables if necessary
-      c.terms.map {t =>
-        this.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
       }
     }
   }
@@ -72,6 +63,9 @@ class CDCLLike extends Decisionprocedure {
     //check if the instance contains an empty constraint
     if(this.containsEmptyConstraint)
       return false
+
+    //add all variables
+    this.instance.map(_.terms.map{t => this.variables.update(t.l.v.ID, t.l.v)})
 
     //else try to solve the instance
     while (true) {
@@ -109,13 +103,10 @@ class CDCLLike extends Decisionprocedure {
   def reset(): Unit = {
     this.level = 0
     this.stack = new mutable.Stack[PBLVariable]()
+    this.containsEmptyConstraint = false
     //reset all variables
-    this.variables.values.map{v =>
-      v.unassign()
-      v.reason = null
-      v.activity = 0
-      v.watched = new ListBuffer[Constraint]()
-    }
+    this.variables = mutable.HashMap[Int, PBLVariable]()
+
     //delete all learned Constraints
     this.instance = this.instance.filterNot(_.removable)
 
