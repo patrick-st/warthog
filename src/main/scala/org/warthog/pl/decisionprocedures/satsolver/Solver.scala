@@ -25,143 +25,77 @@
 
 package org.warthog.pl.decisionprocedures.satsolver
 
-import org.warthog.generic.formulas.{ Formula, Falsum }
+import org.warthog.generic.formulas.{Formula, Falsum}
 import org.warthog.pl.formulas.PL
 
 /**
-  * Common interface for SAT solvers
-  */
+ * Common interface for SAT solvers
+ */
 trait Solver {
   /**
-    * Add a formula to the solver.  If the solver held a formula `F` bevor, it now holds `F /\ fm`.
-    * @param fm the formula to add
-    */
-  def add(fm: Formula[PL]): Unit
+   * Reset the solver
+   */
+  def reset()
 
   /**
-    * Mark a solver's internal stack position.  Executing
-    * {{{
-    * Solver.add(f0)
-    * Solver.mark()
-    * Solver.add(a1)
-    * Solver.add(a2)
-    * Solver.undo()
-    * }}}
-    * will set the solver back into the state after adding `f0`
-    */
-  def mark(): Unit
+   * Add a formula to the solver.  If the solver held a formula `F` before, it now holds `F /\ fm`.
+   * @param fm the formula to add
+   */
+  def add(fm: Formula[PL])
 
   /**
-    * Undo all the additions until the last marked position.
-    */
-  def undo(): Unit
+   * Mark a solver's internal stack position.  Executing
+   * {{{
+   * Solver.add(f0)
+   * Solver.mark()
+   * Solver.add(a1)
+   * Solver.add(a2)
+   * Solver.undo()
+   * }}}
+   * will set the solver back into the state after adding `f0`
+   */
+  def mark()
 
   /**
-    * Check decisionprocedures satsolver of the formula on the internal stack.
-    * @param timeout a timeout value for the solver
-    * @return <0: UNSAT, >0: SAT, 0: UNKNOWN
-    */
-  def sat(timeout: Duration): Int
+   * Undo all the additions until the last marked position.
+   */
+  def undo()
 
   /**
-    * Get a model of the formula
-    * @return [[org.warthog.formulas.Falsum]] if UNSAT, else satisfying assignment
-    *           in form of a conjunction of literals
-    */
-  def getModel(): Formula[PL]
+   * Checks the previously added constraints for satisfiability.
+   * @param timeout a timeout value for the solver
+   * @return Appropriate constant UNKOWN, SAT or UNSAT
+   */
+  def sat(timeout: Duration = Infinity): Int
 
-  /**
-    * Reset the solver
-    */
-  def reset(): Unit
-
-  /**
-    * Initialize the solver
-    */
-  def init(): Unit
+  def getModel(): Option[Model]
 }
 
 object Solver {
-  /**
-    * literal: true
-    */
-  val TRUE_LITERAL: String = "T"
-  /**
-    * literal: false
-    */
-  val FALSE_LITERAL: String = "F"
-  /**
-    * minimum position model type
-    */
-  val Modeltype_MinPos: Int = 0
-  /**
-    * maximum position model type
-    */
-  val Modeltype_MaxPos: Int = 1
-  /**
-    * minimum negation model type
-    */
-  val Modeltype_MinNeg: Int = 2
-  /**
-    * maximum negation model type
-    */
-  val Modeltype_MaxNeg: Int = 3
-  /**
-    * minimum redundant codes
-    */
-  val MIN_REDUNDANT: Int = Integer.MIN_VALUE
+  /* Possible solver states */
+  final val UNKNOWN = 0
+  final val SAT = 1
+  final val UNSAT = -1
 }
 
 /**
-  * Solvers that support unsat core extraction mix-in this trait
-  */
-trait UnsatCore {
-  this: Solver =>
-  def unsatCore(): Formula[PL]
-}
-
-/**
-  * Solvers which support proof trace generation mix-in this trait
-  */
-trait ProofTrace {
-  /* TODO: Suitable form for proof traces/refutations? */
-}
-
-/**
-  * Solvers which support interpolant generation mix-in this trait
-  *
-  * There are solvers that generate Craig interpolants on the fly, if a
-  * solver supports proof trace generation, interpolants can, however, be
-  * easily extracted from resolution refutations (for an overview cf.
-  * D'Silva, Kroening et al.: "Interpolant Strength", VMCAI 2010).
-  */
-trait CraigInterpolant {
-  this: ProofTrace =>
-  def getInterpolant(): Formula[PL]
-}
-
-/**
-  * Example usage:
-  *
-  * {{{
-  * sat(new PicoSat) {
-  *   solver => {
-  *     solver.add(...);
-  *     solver.sat(Infinity);
-  * }
-  * }
-  * }}}
-  */
+ * Example usage:
+ *
+ * {{{
+ * sat(new PicoSat) {
+ *   solver => {
+ *     solver.add(...);
+ *     solver.sat(Infinity);
+ * }
+ * }
+ * }}}
+ */
 object sat {
 
   class SolverExecutor(s: Solver) {
-    def apply(f: Solver => Unit) = {
-      s.init()
-      try {
-        f(s)
-      } finally {
-        s.reset()
-      }
+    def apply(f: Solver => Unit) {
+      s.reset()
+      f(s)
     }
   }
 

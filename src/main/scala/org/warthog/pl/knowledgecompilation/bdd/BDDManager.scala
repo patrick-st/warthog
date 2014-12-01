@@ -103,9 +103,9 @@ class BDDManager(var ord: Seq[PLAtom] = Seq[PLAtom]()) {
   private def lookupUnique(node: BDDNode): Int = uback.get(node) match {
     case Some(i) => i
     case None => {
-      unique += (index -> node);
-      uback += (node -> index);
-      index += 1;
+      unique += (index -> node)
+      uback += (node -> index)
+      index += 1
       index - 1
     }
   }
@@ -267,7 +267,7 @@ class BDDManager(var ord: Seq[PLAtom] = Seq[PLAtom]()) {
     }
 
     /* assumption: a>=0 */
-    def visitnode(a: Int): Unit = {
+    def visitnode(a: Int) {
       if (a > 1) {
         val BDDNode(v, l, r) = expandNode(a)
 

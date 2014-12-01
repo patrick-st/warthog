@@ -51,7 +51,6 @@ import scala.collection.mutable
   * - a Formula[FOL]
   * - a (List[(String, Set[Int])], List[ImmutableFOLClause])
   *
-  * TODO: Read also dnf
   */
 object DIMACSReader {
 

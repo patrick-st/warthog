@@ -28,33 +28,45 @@ package org.warthog.pl.decisionprocedures.satsolver.impl.minisat;
 import com.sun.jna.*;
 
 public class JMinisat {
-    private static final String DIR="/solvers/minisat";
+    private static final String DIR = "/solvers/minisat";
+
+    public static final int UNKNOWN = 0;
+    public static final int SAT = 10;
+    public static final int UNSAT = 20;
+
     private CMinisat INSTANCE;
 
     private interface CMinisat extends Library {
         int ms_newSolver();
+
         void ms_addClause(int solver, int arr[]);
+
         int ms_satAss(int solver, int ass[]);
+
         int ms_sat(int solver);
+
         int ms_deref(int solver, int var);
+
         void ms_freeSolver(int solver);
     }
 
-    public JMinisat(String libdir) throws Exception {
-        StringBuilder pref=new StringBuilder(libdir+DIR);
+    public JMinisat(String libDir) throws Exception {
+        if (libDir == null || "".equals(libDir))
+            libDir = "lib";
+        StringBuilder pref = new StringBuilder(libDir + DIR);
 
         if (Platform.isMac())
             if (Platform.is64Bit())
-              pref.append("/macosx/64");
+                pref.append("/macosx/64");
             else
-              pref.append("/macosx/32");
+                pref.append("/macosx/32");
         else if (Platform.isLinux())
             pref.append("/linux");
         else if (Platform.isWindows())
             pref.append("/win");
         else
             throw new Exception("JMinisat: Platform unsupported!");
-
+        
         System.setProperty("jna.library.path", pref.toString());
         INSTANCE = (CMinisat) Native.loadLibrary("minisat", CMinisat.class);
     }
@@ -86,36 +98,4 @@ public class JMinisat {
     public void minisat_free(int solver) {
         INSTANCE.ms_freeSolver(solver);
     }
-
-    public void test() {
-        System.out.println("initialize solver0");
-        int solver0=minisat_init();
-        System.out.println("initialize solver1");
-        int solver1=minisat_init();
-
-        System.out.println("adding clauses to solver0...");
-        minisat_add(solver0, new int[]{-1, 0});
-        System.out.println("clause 0 added...");
-        minisat_add(solver0, new int[]{ 1, 0});
-        System.out.println("clause 2 added...");
-        System.out.println("done");
-
-        System.out.println("p cnf 1 2\n-1 0\n1 0? "+minisat_sat(solver0));
-
-        System.out.println("adding clauses to solver1...");
-        minisat_add(solver1, new int[]{1, 2, 0});
-        System.out.println("done");
-
-        System.out.println("p cnf 2 1\n1 -2 0? "+minisat_sat(solver1));
-
-        minisat_free(solver0);
-        minisat_free(solver1);
-    }
-
-    public static void main(String[] args) throws Exception {
-        //System.setProperty("warthog.libs", "/Users/ak/IdeaProjects/warthog/lib");
-        JMinisat jps=new JMinisat();
-        jps.test();
-    }
-
 }
