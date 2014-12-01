@@ -24,11 +24,23 @@ class LinearOptimiserTest extends Specification {
       linearOptimiser.add(instance._1)
       linearOptimiser.solve(instance._2.get) == Some(3)
     }
-    "be 34 for formula normalized-mps-v2" in {
+    "be 34 for formula mps-v2" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2.opb"))
       val linearOptimiser = new LinearOptimiser()
       linearOptimiser.add(instance._1)
       linearOptimiser.solve(instance._2.get) == Some(34)
+    }
+    "be 5 for formula v2-stein9" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2-stein9.opb"))
+      val linearOptimiser = new LinearOptimiser()
+      linearOptimiser.add(instance._1)
+      linearOptimiser.solve(instance._2.get) == Some(5)
+    }
+    "be 9 for formula v2-stein15" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2-stein15.opb"))
+      val linearOptimiser = new LinearOptimiser()
+      linearOptimiser.add(instance._1)
+      linearOptimiser.solve(instance._2.get) == Some(9)
     }
   }
 
