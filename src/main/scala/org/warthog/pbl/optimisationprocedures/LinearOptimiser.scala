@@ -48,7 +48,7 @@ class LinearOptimiser extends Optimisationprocedure{
     }
 
     //start to optimize
-    while(this.solver.solve(List[Constraint](this.maximizeFunction))){
+    while(this.solver.solve(List[Constraint](this.maximizeFunction.copy))){
       //compute the max and min optimum
       this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
       this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
