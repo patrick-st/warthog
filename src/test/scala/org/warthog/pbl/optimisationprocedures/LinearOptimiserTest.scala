@@ -3,6 +3,7 @@ package org.warthog.pbl.optimisationprocedures
 import java.io.File
 
 import org.specs2.mutable.Specification
+import org.warthog.pbl.C
 import org.warthog.pbl.datastructures.Constraint
 import org.warthog.pbl.decisionprocedures.CDCLLike
 import org.warthog.pbl.parsers.PBCompetitionReader
@@ -65,6 +66,14 @@ class LinearOptimiserTest extends Specification {
       val linearOptimiser = new LinearOptimiser()
       linearOptimiser.add(instance._1)
       linearOptimiser.solve(instance._2.get) == Some(5)
+    }
+    "be 2 for formula f08.cnf with new objective function" in {
+      val instance = PBCompetitionReader.getInstance(getPBFileString("f08.cnf.opb"))
+      val linearOptimiser = new LinearOptimiser()
+      linearOptimiser.add(instance._1)
+      linearOptimiser.solve(instance._2.get)
+      linearOptimiser.reset()
+      linearOptimiser.solve(C.f08_objectiveFunction) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f09.cnf.opb"))
