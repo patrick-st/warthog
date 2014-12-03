@@ -34,7 +34,13 @@ class LinearOptimiser extends Optimisationprocedure{
    * Main entry point for optimizing the given instance by linear search
    */
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
+    //exchange variables
+    objectiveFunction.map { t =>
+      t.l.v = solver.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
+    }
+
     this.minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+
     //compute the maximization function
     val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
     //multiply with -1 to get the maximization function
