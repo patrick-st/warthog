@@ -31,6 +31,11 @@ class BinarySearchOptimiser extends Optimisationprocedure{
 
 
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
+    //exchange variables
+    objectiveFunction.map { t =>
+      t.l.v = solver.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
+    }
+
     //compute the minimize and maximize functions
     this.minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     //compute the maximization function
