@@ -26,4 +26,9 @@ trait Optimisationprocedure {
    * @return None if the instance is unsat else the optimum
    */
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt]
+
+  /**
+   * Reset the optimiser to initial state
+   */
+  def reset(): Unit
 }
