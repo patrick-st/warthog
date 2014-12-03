@@ -98,5 +98,17 @@ object C {
     new PBLTerm(1,new PBLLiteral(x3)),
     new PBLTerm(1,new PBLLiteral(x4)),
     new PBLTerm(1,new PBLLiteral(x5)))
+
+
+  //objective function for optimiser testing
+  val f08_objectiveFunction = List[PBLTerm](
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x9"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x10"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x11"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x12"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x13"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x14"))),
+    new PBLTerm(1, new PBLLiteral(new PBLVariable("x15")))
+  )
 }
 
