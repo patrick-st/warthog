@@ -68,6 +68,7 @@ class PBLVariable(val name: String) {
   def unassign() = {
     this.level = -1
     this.state = State.OPEN
+    this.reason = null
   }
 }
 
