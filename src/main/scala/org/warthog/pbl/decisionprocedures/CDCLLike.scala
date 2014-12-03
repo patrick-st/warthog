@@ -14,7 +14,6 @@ class CDCLLike extends Decisionprocedure {
   var instance = List[Constraint]()
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
-  var variables = mutable.HashMap[Int, PBLVariable]()
   var units = mutable.HashSet[Constraint]()
   var containsEmptyConstraint = false
 
