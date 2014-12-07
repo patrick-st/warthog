@@ -16,7 +16,7 @@ class BranchAndBoundOptimiserTest extends Specification{
   private def getPBFileString(file: String) =
     List("src", "test", "resources", "pbcompetition", file).mkString(File.separator)
 
-  "Optimisation by binary search  of simple cnf formulas" should {
+  "Optimisation by branch and bound  of simple cnf formulas" should {
     "be 0 for formula f01.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f01.cnf.opb"))
       val optimiser = new BranchAndBoundOptimiser()
@@ -93,7 +93,7 @@ class BranchAndBoundOptimiserTest extends Specification{
     }
   }
 
-  "Optimisation by binary search of pseudo-boolean formulas" should {
+  "Optimisation by branch and bound of pseudo-boolean formulas" should {
     "be 34 for formula mps-v2" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("normalized-mps-v2.opb"))
       val optimiser = new BranchAndBoundOptimiser()
