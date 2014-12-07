@@ -77,11 +77,13 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
     this.unitPropagation match {
       //the instance can't be satisfied with this partial assignment
       case Some(c) => {
+        //update activity
+        c.terms.map(_.l.v.activity += 1)
         return Some(currentUB)
       }
       case None => {
         //lb = current value of objective function
-        val lb = this.normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum
+        val lb = this.normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + this.maximalIndependentSet
 
         if(lb >= currentUB) {
           return Some(currentUB)
@@ -93,6 +95,8 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
             return Some(this.normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum)
           }
           case Some(v) => {
+            //update activity
+            this.variables.values.map(_.activity *= 0.95)
             val backtrackLevel = this.level
 
             this.level += 1
@@ -150,7 +154,7 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
     if (openVars.isEmpty) {
       None
     } else {
-      Some(openVars(0))
+      Some(openVars.maxBy(_.activity))
     }
   }
 
@@ -174,6 +178,51 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
         c.asInstanceOf[PBLConstraint].updateCurrentSum
       }
     }
+  }
+
+  def maximalIndependentSet : BigInt = {
+    var independentSet = Set[PBLVariable]()
+    //collect all variables of the objective function
+    val varsObjective = this.objectiveFunction.foldLeft(Set[PBLVariable]())(_ + _.l.v)
+    var cost: BigInt = 0
+    this.instance.foreach{c =>
+      //check if constraint is already sat
+      val isSat = c.terms.filter(_.l.evaluates2True).map(_.a).sum >= c.degree
+      if(!isSat){
+        val varsC = c.terms.foldLeft(Set[PBLVariable]())(_ + _.l.v)
+        if((independentSet intersect varsC).isEmpty){
+          independentSet ++= c.terms.foldLeft(independentSet)(_ + _.l.v)
+          cost += this.minimalCost(c.copy, varsObjective)
+        }
+      }
+    }
+    cost
+  }
+
+  def minimalCost(c: Constraint, varsObjective: Set[PBLVariable]): BigInt = {
+    var terms = this.normalizedFunction.foldLeft(mutable.HashMap[Int, BigInt]()){(map,t) => map += t.l.v.ID -> t.a}
+    //determine degree of corresponding cardinality constraint
+    var degree_ = c.degree
+    //collect all variables who evaluate to true and don't cause any costs
+    val noCostVariables = c.terms.filter{t => t.l.evaluates2True || (t.l.v.state == State.OPEN && !varsObjective.contains(t.l.v))}
+    degree_ -= noCostVariables.map(_.a).sum
+    //sorted list of the cost variables from min to max
+    var minCostVariables = c.terms.filter(_.l.v.state == State.OPEN).diff(noCostVariables).sortBy{t => terms(t.l.v.ID)}
+    //sorted list of the cost variables from max to min
+    var maxKoeffVariables = c.terms.filter(_.l.v.state == State.OPEN).diff(noCostVariables).sortBy(_.a).reverse
+    //k is the degree of the cardinality constraint
+    var k = 0
+    var s: BigInt = 0
+    while(s < degree_ && !maxKoeffVariables.isEmpty){
+      s += maxKoeffVariables(0).a
+      maxKoeffVariables = maxKoeffVariables.tail
+      k += 1
+    }
+    var cost: BigInt = 0
+    for(i <- 0 to k-1){
+      cost += terms(minCostVariables(i).l.v.ID)
+    }
+    cost
   }
 
 
