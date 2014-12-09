@@ -76,14 +76,14 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       case Some(c) => {
         //update activity
         c.terms.map(_.l.v.activity += 1)
-        return Some(currentUB)
+        Some(currentUB)
       }
       case None => {
         //lb = current value of objective function
         val lb = normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + maximalIndependentSet
 
         if (lb >= currentUB) {
-          return Some(currentUB)
+          Some(currentUB)
         }
         //chose next variable
         getNextVar match {
@@ -106,7 +106,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
             //now assign the variable to true
             v.assign(true, units, level, null)
             stack.push(v)
-            return Some(newUB.min(solve(newUB).get))
+            Some(newUB.min(solve(newUB).get))
           }
         }
       }
