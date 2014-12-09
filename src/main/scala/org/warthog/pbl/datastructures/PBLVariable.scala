@@ -10,6 +10,7 @@ import scala.collection.mutable
  *             Note the variable name has to be of the form: x[Integer]
  */
 class PBLVariable(val name: String) {
+
   //ID = Integer of the variable name
   val ID = name.drop(1).toInt
   var state: State.Value = State.OPEN
@@ -21,7 +22,7 @@ class PBLVariable(val name: String) {
   override def toString = name
 
   override def equals(p: Any) = {
-    if(p.isInstanceOf[PBLVariable]){
+    if (p.isInstanceOf[PBLVariable]) {
       p.asInstanceOf[PBLVariable].name == name
     } else
       false
@@ -47,7 +48,7 @@ class PBLVariable(val name: String) {
   def assign(value: Boolean, unitConstraints: mutable.HashSet[Constraint], level: Int, reason: Constraint): Option[Constraint] = {
     var emptyConstraint: Option[Constraint] = None
     //update state, level and reason
-    if(value)
+    if (value)
       state = State.TRUE
     else
       state = State.FALSE
@@ -55,8 +56,8 @@ class PBLVariable(val name: String) {
     this.reason = reason
 
     //update the constraints in watched list
-    watched.map{c =>
-      c.updateWatchedLiterals(this,value) match {
+    watched.map { c =>
+      c.updateWatchedLiterals(this, value) match {
         case ConstraintState.UNIT => unitConstraints += c
         case ConstraintState.EMPTY => emptyConstraint = Some(c)
         case _ =>

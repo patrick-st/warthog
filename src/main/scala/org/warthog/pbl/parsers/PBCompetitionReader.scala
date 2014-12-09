@@ -9,23 +9,22 @@ import scala.collection.mutable.ListBuffer
  * Parser to read pseudo-boolean constraint instances
  * in Pseudo-boolean Competition format
  * Reference: Input/Output Format and Solver Requirements
- *            for the Competitions of Pseudo-Boolean Solvers
+ * for the Competitions of Pseudo-Boolean Solvers
  * http://www.cril.univ-artois.fr/PB12/format.pdf
  */
 object PBCompetitionReader {
 
-
   def getInstance(path: String) = {
     val instance = readCompetitionFormat(path)
-    (instance._1,instance._2,instance._3)
-
+    (instance._1, instance._2, instance._3)
   }
+
   /**
    * Read a File in Pseudo-Boolean Competition format
    * @param path path of the source
    * @return a pair containing a list of all constraints an the objective function
    */
-  def readCompetitionFormat(path: String): (List[Constraint], Option[List[PBLTerm]],mutable.HashMap[Int, PBLVariable]) = {
+  def readCompetitionFormat(path: String): (List[Constraint], Option[List[PBLTerm]], mutable.HashMap[Int, PBLVariable]) = {
     val variables = new mutable.HashMap[Int, PBLVariable]()
     var preambleRead = false
     var numberOfConstraintsInPreamble = 0
@@ -53,10 +52,10 @@ object PBCompetitionReader {
             } else if (preambleRead && line.contains("#variable="))
               System.err.println("Line " + lineNumber + ": More than one preamble --> Use the first")
           case 'm' =>
-            if(line.endsWith(";")) objectiveFunction = Some(parseObjective(line, variables))
+            if (line.endsWith(";")) objectiveFunction = Some(parseObjective(line, variables))
             else System.err.println("Line " + lineNumber + ": Line doesn't end with ';' --> Skip line")
           case _ =>
-            if(line.endsWith(";")){
+            if (line.endsWith(";")) {
               try {
                 parseConstraint(line, variables) match {
                   case (c, None) => constraints += c
@@ -80,7 +79,6 @@ object PBCompetitionReader {
     (constraints.toList, objectiveFunction, variables)
   }
 
-
   /**
    * Parses a string that represents a constraint and returns:
    * - case '>=' constraint: a tuple (the constraint, None)
@@ -99,7 +97,7 @@ object PBCompetitionReader {
     val termRegex = "[-|+]?\\s*\\d+\\s*x\\s*\\d+".r
     //compute the terms of the '>=' constraint
     val terms = termRegex.findAllIn(lhs).duplicate
-    val termList = terms._1.foldLeft(ListBuffer[PBLTerm]()){
+    val termList = terms._1.foldLeft(ListBuffer[PBLTerm]()) {
       try {
         _ += string2Term(_, variables)
       } catch {
@@ -125,7 +123,7 @@ object PBCompetitionReader {
       }.toList
       //multiply the constraint with -1
       termList2.map(_.a *= -1)
-      val lessOrEqualConstraint = if(isCardinality){
+      val lessOrEqualConstraint = if (isCardinality) {
         new PBLCardinalityConstraint(termList2, -BigInt(rhs))
       } else {
         new PBLConstraint(termList2, -BigInt(rhs))
@@ -184,7 +182,7 @@ object PBCompetitionReader {
    * @param terms the terms of the constraint
    * @return true if the constraint is a cardinality constraint else false
    */
-  private def isCardinalityConstraint(terms: List[PBLTerm]):Boolean ={
+  private def isCardinalityConstraint(terms: List[PBLTerm]): Boolean = {
     val coefficient = terms(0).a.abs
     terms.forall(_.a.abs == coefficient)
   }

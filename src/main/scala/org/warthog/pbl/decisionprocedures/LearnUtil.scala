@@ -18,8 +18,7 @@ object LearnUtil {
    * @return the new clause to learn
    */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) =
-    learn(reduce2Clause,reduce2Clause,resolve,conflict,stack,level)
-
+    learn(reduce2Clause, reduce2Clause, resolve, conflict, stack, level)
 
   /**
    * Generic function to provide three different learn methods
@@ -36,24 +35,23 @@ object LearnUtil {
    * @return the new clause to learn
    */
   private def learn(reduce1: (Constraint, PBLVariable) => Constraint, reduce2: (Constraint, PBLVariable) => Constraint,
-                    resolve: (Constraint,Constraint,PBLVariable) => Constraint,
+                    resolve: (Constraint, Constraint, PBLVariable) => Constraint,
                     conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
 
     var c1 = conflict
     //resolve the conflict until the resolvent is 1UIP
-    while(!stack.isEmpty){
+    while (!stack.isEmpty) {
       val v = stack.pop()
-      c1 = reduce1(c1,v)
+      c1 = reduce1(c1, v)
       val c2 = reduce2(v.reason, v)
       c1 = resolve(c1, c2, v)
       v.unassign()
-      if(is1UIP(c1, level)){
+      if (is1UIP(c1, level)) {
         return c1
       }
     }
     null
   }
-
 
   /**
    * Reduce the given constraint to a clause
@@ -77,19 +75,17 @@ object LearnUtil {
     }
   }
 
-
-
   /**
    * Checks if the constraints are resolvable or not
    * @param c1 first constraint
    * @param c2 second constraint
    * @return true if c1 and c2 are resolvable else false
    */
-  private def isResolvable(c1: Constraint, c2: Constraint, v: PBLVariable): Boolean ={
+  private def isResolvable(c1: Constraint, c2: Constraint, v: PBLVariable): Boolean = {
     var t1: PBLLiteral = null
     var t2: PBLLiteral = null
-    val existsC1 = c1.terms.exists{t => t1 = t.l; t.l.v == v}
-    val existsC2 = c2.terms.exists{t => t2 = t.l; t.l.v == v}
+    val existsC1 = c1.terms.exists { t => t1 = t.l; t.l.v == v}
+    val existsC2 = c2.terms.exists { t => t2 = t.l; t.l.v == v}
     existsC1 && existsC2 && t1.phase != t2.phase
   }
 
@@ -104,8 +100,8 @@ object LearnUtil {
    * @return the resolvent
    */
   private def resolve(c1: Constraint, c2: Constraint, v: PBLVariable) = {
-    if(isResolvable(c1,c2,v)){
-      val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy )
+    if (isResolvable(c1, c2, v)) {
+      val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
       new PBLCardinalityConstraint(newTerms, 1, true)
     } else {
       c1
@@ -123,6 +119,5 @@ object LearnUtil {
   private def is1UIP(c1: Constraint, level: Int) = {
     c1.terms.filter(_.l.v.level == level).size == 1
   }
-
 }
 

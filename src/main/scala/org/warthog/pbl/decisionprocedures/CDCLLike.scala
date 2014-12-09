@@ -17,20 +17,19 @@ class CDCLLike extends Decisionprocedure {
   var units = mutable.HashSet[Constraint]()
   var containsEmptyConstraint = false
 
-
   /**
    * Adding a constraint to the instance
    * @param c the constraint to add
    */
   def add(c: Constraint) {
     //exchange variables if necessary
-    c.terms.map{t =>
-     t.l.v = variables.getOrElseUpdate(t.l.v.ID,t.l.v)
+    c.terms.map { t =>
+      t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
     c.initWatchedLiterals match {
       case ConstraintState.UNIT => units += c; instance ::= c
-      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::=c
+      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::= c
       case _ => instance ::= c
     }
   }
@@ -43,7 +42,6 @@ class CDCLLike extends Decisionprocedure {
     constraintList.map(this.add(_))
   }
 
-
   /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
@@ -54,7 +52,7 @@ class CDCLLike extends Decisionprocedure {
     //add the constraints to the instance
     add(constraints)
     //check if the instance contains an empty constraint
-    if(this.containsEmptyConstraint)
+    if (this.containsEmptyConstraint)
       return false
 
     //else try to solve the instance
@@ -86,22 +84,21 @@ class CDCLLike extends Decisionprocedure {
     false
   }
 
-
   def printVariables {
-    variables.values.toList.sortBy(_.ID).map{v =>
-    println(v.ID + ": " + v.state)
+    variables.values.toList.sortBy(_.ID).map { v =>
+      println(v.ID + ": " + v.state)
     }
-}
+  }
 
   private def initConstraints {
-    instance.map{c =>
-          c.initWatchedLiterals match {
-            case ConstraintState.UNIT => units += c;
-            case ConstraintState.EMPTY => containsEmptyConstraint = true;
-            //ignore the sat constraints
-            case _  =>
-          }
-        }
+    instance.map { c =>
+      c.initWatchedLiterals match {
+        case ConstraintState.UNIT => units += c;
+        case ConstraintState.EMPTY => containsEmptyConstraint = true;
+        //ignore the sat constraints
+        case _ =>
+      }
+    }
   }
 
   /**
@@ -117,21 +114,21 @@ class CDCLLike extends Decisionprocedure {
 
     //reset all variables
     variables = mutable.HashMap[Int, PBLVariable]()
-    instance.map{c =>
-      c.terms.map{t =>
+    instance.map { c =>
+      c.terms.map { t =>
         val v = t.l.v
         v.state = State.OPEN
         v.watched = ListBuffer[Constraint]()
         v.level = -1
         v.reason = null
         v.activity = 0.0
-        variables.update(t.l.v.ID,v)
+        variables.update(t.l.v.ID, v)
       }
     }
 
-    units =  mutable.HashSet[Constraint]()
+    units = mutable.HashSet[Constraint]()
     //reset all constraints and init the watched literals
-    instance.map{c =>
+    instance.map { c =>
       c match {
         case cardinality: PBLCardinalityConstraint => {
           cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
@@ -162,7 +159,6 @@ class CDCLLike extends Decisionprocedure {
     })
     occ
   }
-
 
   /**
    * Treat all unit constraints and all literals which has to be propagated
@@ -266,7 +262,6 @@ class CDCLLike extends Decisionprocedure {
       Some(openVars.maxBy(_.activity))
     }
   }
-
 
   /**
    * Method computes the watched literals of the new learned clause.

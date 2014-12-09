@@ -8,10 +8,12 @@ import scala.collection.mutable
  * Interface for Pseudo-Boolean Solvers
  */
 trait Decisionprocedure {
+
   /**
    * The variables of the instance to solve
    */
   var variables = mutable.HashMap[Int, PBLVariable]()
+
   /**
    * Add a constraint which has to be solved
    * @param c the constraint

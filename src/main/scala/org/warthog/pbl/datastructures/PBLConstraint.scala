@@ -6,12 +6,12 @@ package org.warthog.pbl.datastructures
  * @param terms terms of the left-hand side
  * @param degree the right-hand side
  */
-class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable){
+class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable) {
+
   //sum of all coefficients a_i where l_i evaluates to true
   var currentSum: BigInt = 0
   //sum of all coefficients a_i where l_i not evaluates to true (l_i = false or open)
   var slack: BigInt = 0
-
 
   /**
    * Returns a copy of the constraint
@@ -26,7 +26,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return the state of the constraint:
    *         - UNIT, EMPTY, SAT
    *         - or SUCCESS if the constraint is currently unsat but can still be satisfied and
-   *           the watched literals are successfully initialized
+   *         the watched literals are successfully initialized
    */
   def initWatchedLiterals() = {
     slack = terms.map(_.a).sum - degree
@@ -40,7 +40,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return true if constraint is unit else false
    */
   def isUnit(): Boolean = {
-    if(currentSum >= degree)
+    if (currentSum >= degree)
       false
     else {
       for (t <- terms) {
@@ -59,9 +59,9 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return the new state of the constraint
    */
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean) = {
-    for(t <- terms; if t.l.v == v){
+    for (t <- terms; if t.l.v == v) {
       //literal evaluates to true => currentSum has to be updated
-      if(t.l.phase == value){
+      if (t.l.phase == value) {
         currentSum += t.a
         //literal evaluates to false => slack has to be updated
       } else {
@@ -77,8 +77,8 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    terms.foldLeft(List[PBLLiteral]()){(list, term) =>
-      if(term.l.v.state == State.OPEN && term.a > slack)
+    terms.foldLeft(List[PBLLiteral]()) { (list, term) =>
+      if (term.l.v.state == State.OPEN && term.a > slack)
         list :+ term.l
       else
         list
@@ -90,18 +90,18 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return
    */
   private def getCurrentState: ConstraintState.Value = {
-    if(slack < 0)
+    if (slack < 0)
       return ConstraintState.EMPTY
-    if(currentSum >= degree)
+    if (currentSum >= degree)
       return ConstraintState.SAT
-    if(this.isUnit)
+    if (this.isUnit)
       return ConstraintState.UNIT
     else ConstraintState.SUCCESS
   }
 
   def updateSlack {
-    slack = terms.foldLeft(BigInt(0)){(sum,term) =>
-      if(!term.l.evaluates2False)
+    slack = terms.foldLeft(BigInt(0)) { (sum, term) =>
+      if (!term.l.evaluates2False)
         sum + term.a
       else
         sum
@@ -109,8 +109,8 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
   }
 
   def updateCurrentSum {
-    currentSum = terms.foldLeft(BigInt(0)){(sum, term) =>
-      if(term.l.evaluates2True)
+    currentSum = terms.foldLeft(BigInt(0)) { (sum, term) =>
+      if (term.l.evaluates2True)
         sum + term.a
       else
         sum

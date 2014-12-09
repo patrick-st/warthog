@@ -6,8 +6,9 @@ import org.warthog.pbl.decisionprocedures.{CDCLLike, Decisionprocedure}
 /**
  * Implementation of an optimiser, which uses binary search to compute the optimum
  */
-class BinarySearchOptimiser extends Optimisationprocedure{
-  val solver : Decisionprocedure = new CDCLLike()
+class BinarySearchOptimiser extends Optimisationprocedure {
+
+  val solver: Decisionprocedure = new CDCLLike()
   //the original parsed minimisation function of the opb-file
   var minimizeFunction: List[PBLTerm] = null
   //the computed maximisation function out of the minimisation function
@@ -28,7 +29,6 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     minOptimum = null
     maxOptimum = null
   }
-
 
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
     //exchange variables
@@ -61,8 +61,8 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     //enforce objectiveFunction <= upper
     var upperBoundConstraint = computeUpperBoundConstraint(upper)
 
-    while(lower <= upper){
-      if(solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint))){
+    while (lower <= upper) {
+      if (solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint))) {
         //update max and minOptimum
         maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
         minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
@@ -70,7 +70,7 @@ class BinarySearchOptimiser extends Optimisationprocedure{
         lower = maxOptimum + 1
       } else {
         //update the new upper bound
-        upper = middle-1
+        upper = middle - 1
       }
       middle = (lower + upper) / 2
       //update the constraints
@@ -81,13 +81,12 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     }
 
     //return the optimum
-    if(minOptimum == null){
+    if (minOptimum == null) {
       None
     } else {
       Some(minOptimum)
     }
   }
-
 
   /**
    * Method computes the constraint to enforce objective function <= upper bound
@@ -98,11 +97,10 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     val terms = maximizeFunction.terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     terms.map(_.a *= -1)
     //check if constraint is cardinality or not
-    if(maximizeFunction.terms.forall(_.a.abs == maximizeFunction.terms(0).a.abs)){
+    if (maximizeFunction.terms.forall(_.a.abs == maximizeFunction.terms(0).a.abs)) {
       new PBLCardinalityConstraint(terms, -degree)
     } else {
       new PBLConstraint(terms, -degree)
     }
   }
-
 }

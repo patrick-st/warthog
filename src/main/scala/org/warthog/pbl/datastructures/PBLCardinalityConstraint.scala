@@ -9,7 +9,7 @@ import scala.collection.mutable.ArrayBuffer
  * @param terms left-hand side of the constraint
  * @param degree right-hand side of the constraint
  */
-class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable){
+class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable: Boolean = false) extends Constraint(terms, degree, removable) {
   reduceCoefficients()
 
   var watchedLiterals = new ArrayBuffer[PBLTerm](degree.+(1).toInt)
@@ -21,7 +21,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
     val coeff = terms(0).a
     terms.map(_.a = BigInt(1))
     val tuple = (degree /% coeff)
-    degree =  if (tuple._2 == 0) tuple._1 else tuple._1 + 1
+    degree = if (tuple._2 == 0) tuple._1 else tuple._1 + 1
   }
 
   /**
@@ -35,21 +35,21 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * @return the state of the constraint
    */
   def initWatchedLiterals() = {
-    if(terms.size < degree)
+    if (terms.size < degree)
       ConstraintState.EMPTY
-    else if(terms.size == degree) {
+    else if (terms.size == degree) {
       //all literals have to be watched
       watchedLiterals = new ArrayBuffer[PBLTerm](terms.size)
       terms.copyToBuffer(watchedLiterals)
       //add clause to watchedList of all variables
       terms.map(_.l.v.add(this))
       ConstraintState.UNIT
-    } else if(degree <= 0)
+    } else if (degree <= 0)
       ConstraintState.SAT
     else {
       var i = 0
       //watch degree + 1 many terms
-      terms.exists{t =>
+      terms.exists { t =>
         watchedLiterals += t
         t.l.v.add(this)
         i += 1
@@ -57,7 +57,6 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
       }
       ConstraintState.SUCCESS
     }
-
   }
 
   /**
@@ -67,9 +66,9 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * @return the new state of the constraint
    */
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState = {
-    for(t <- watchedLiterals; if t.l.v == v ){
+    for (t <- watchedLiterals; if t.l.v == v) {
       //if the corresponding literal evaluates to true, nothing has to be updated
-      if(t.l.evaluates2True) return ConstraintState.SUCCESS
+      if (t.l.evaluates2True) return ConstraintState.SUCCESS
       //search for a new literal
       getNewWatchedLiteral match {
         //new literal was found
@@ -82,8 +81,8 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
           return ConstraintState.SUCCESS
         }
         case None => {
-          if(this.isUnit()) return ConstraintState.UNIT
-          if(this.isSat()) return ConstraintState.SAT
+          if (this.isUnit()) return ConstraintState.UNIT
+          if (this.isSat()) return ConstraintState.SAT
         }
       }
       return ConstraintState.EMPTY
@@ -91,19 +90,19 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
     return ConstraintState.EMPTY
   }
 
-
   /**
    * Computes all literals which has to be propagated
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    watchedLiterals.foldLeft(List[PBLLiteral]()){(list, term) =>
-      if(term.l.v.state == State.OPEN)
+    watchedLiterals.foldLeft(List[PBLLiteral]()) { (list, term) =>
+      if (term.l.v.state == State.OPEN)
         list :+ term.l
       else
         list
     }
   }
+
   /**
    * Search for a new term with a literal which can be watched
    * @return None if no literal can be found else Some(PBLTerm)
@@ -111,7 +110,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
   private def getNewWatchedLiteral: Option[PBLTerm] = {
     var term: Option[PBLTerm] = None
     val diff = terms diff watchedLiterals
-    if(diff.exists{t =>
+    if (diff.exists { t =>
       term = Some(t)
       t.l.v.state == State.OPEN || t.l.evaluates2True
     }) term
@@ -123,10 +122,13 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * @return true if the constraint is unit else false
    */
   private def isUnit(): Boolean = {
-    val openLiterals = watchedLiterals.count{_.l.v.state == State.OPEN}
-    val trueLiterals = watchedLiterals.count{_.l.evaluates2True}
+    val openLiterals = watchedLiterals.count {
+      _.l.v.state == State.OPEN
+    }
+    val trueLiterals = watchedLiterals.count {
+      _.l.evaluates2True
+    }
     openLiterals + trueLiterals == degree && trueLiterals < degree
-
   }
 
   /**
@@ -134,7 +136,9 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * @return true if the constraint is satisfied else false
    */
   private def isSat(): Boolean = {
-    watchedLiterals.count{_.l.evaluates2True} >= degree
+    watchedLiterals.count {
+      _.l.evaluates2True
+    } >= degree
   }
 }
 

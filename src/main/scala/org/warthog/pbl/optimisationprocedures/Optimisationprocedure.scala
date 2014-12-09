@@ -7,7 +7,6 @@ import org.warthog.pbl.datastructures.{PBLTerm, Constraint}
  */
 trait Optimisationprocedure {
 
-
   /**
    * Add a constraint which has to be solved
    * @param c the constraint

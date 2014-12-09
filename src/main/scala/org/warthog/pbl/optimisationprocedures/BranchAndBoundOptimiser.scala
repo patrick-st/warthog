@@ -21,13 +21,13 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
 
   def add(c: Constraint) {
     //exchange variables if necessary
-    c.terms.map{t =>
-      t.l.v = variables.getOrElseUpdate(t.l.v.ID,t.l.v)
+    c.terms.map { t =>
+      t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
     c.initWatchedLiterals match {
       case ConstraintState.UNIT => units += c; instance ::= c
-      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::=c
+      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::= c
       case _ => instance ::= c
     }
   }
@@ -43,19 +43,19 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
 
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
     //exchange variables of objective function
-    objectiveFunction.map{t =>
-      t.l.v = variables.getOrElseUpdate(t.l.v.ID,t.l.v)
+    objectiveFunction.map { t =>
+      t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
     //check if the instance contains an empty constraint
-    if(this.containsEmptyConstraint)
+    if (this.containsEmptyConstraint)
       return None
 
     //set the minimization function
     this.objectiveFunction = objectiveFunction
     //normalize the objective function
-    normalizedFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy).map{t =>
-      if(t.a < 0){
+    normalizedFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy).map { t =>
+      if (t.a < 0) {
         t.a = t.a.abs
         t.l = t.l.negate
       }
@@ -66,12 +66,11 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
     val ub = normalizedFunction.filter(_.a > 0).map(_.a).sum + 1
     solve(ub)
     //check if an optimum was found
-    if(optimum == null)
-       None
+    if (optimum == null)
+      None
     else
       Some(optimum)
   }
-
 
   private def solve(currentUB: BigInt): Option[BigInt] = {
     unitPropagation match {
@@ -85,7 +84,7 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
         //lb = current value of objective function
         val lb = normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + maximalIndependentSet
 
-        if(lb >= currentUB) {
+        if (lb >= currentUB) {
           return Some(currentUB)
         }
         //chose next variable
@@ -101,23 +100,20 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
 
             level += 1
             //first assign the variable to false
-            v.assign(false,units,level,null)
+            v.assign(false, units, level, null)
             stack.push(v)
             val newUB = currentUB.min(solve(currentUB).get)
             backtrack(backtrackLevel)
             level += 1
             //now assign the variable to true
-            v.assign(true,units,level,null)
+            v.assign(true, units, level, null)
             stack.push(v)
             return Some(newUB.min(solve(newUB).get))
           }
         }
       }
     }
-
-
   }
-
 
   private def unitPropagation: Option[Constraint] = {
     while (!units.isEmpty) {
@@ -145,8 +141,6 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
     }
     None
   }
-
-
 
   private def getNextVar: Option[PBLVariable] = {
     // get all open variables
@@ -180,17 +174,17 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
     }
   }
 
-  def maximalIndependentSet : BigInt = {
+  def maximalIndependentSet: BigInt = {
     var independentSet = Set[PBLVariable]()
     //collect all variables of the objective function
     val varsObjective = objectiveFunction.foldLeft(Set[PBLVariable]())(_ + _.l.v)
     var cost: BigInt = 0
-    instance.foreach{c =>
+    instance.foreach { c =>
       //check if constraint is already sat
       val isSat = c.terms.filter(_.l.evaluates2True).map(_.a).sum >= c.degree
-      if(!isSat){
+      if (!isSat) {
         val varsC = c.terms.foldLeft(Set[PBLVariable]())(_ + _.l.v)
-        if((independentSet intersect varsC).isEmpty){
+        if ((independentSet intersect varsC).isEmpty) {
           independentSet ++= c.terms.foldLeft(independentSet)(_ + _.l.v)
           cost += minimalCost(c.copy, varsObjective)
         }
@@ -200,30 +194,28 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
   }
 
   def minimalCost(c: Constraint, varsObjective: Set[PBLVariable]): BigInt = {
-    var terms = normalizedFunction.foldLeft(mutable.HashMap[Int, BigInt]()){(map,t) => map += t.l.v.ID -> t.a}
+    var terms = normalizedFunction.foldLeft(mutable.HashMap[Int, BigInt]()) { (map, t) => map += t.l.v.ID -> t.a}
     //determine degree of corresponding cardinality constraint
     var degree_ = c.degree
     //collect all variables who evaluate to true and don't cause any costs
-    val noCostVariables = c.terms.filter{t => t.l.evaluates2True || (t.l.v.state == State.OPEN && !varsObjective.contains(t.l.v))}
+    val noCostVariables = c.terms.filter { t => t.l.evaluates2True || (t.l.v.state == State.OPEN && !varsObjective.contains(t.l.v))}
     degree_ -= noCostVariables.map(_.a).sum
     //sorted list of the cost variables from min to max
-    var minCostVariables = c.terms.filter(_.l.v.state == State.OPEN).diff(noCostVariables).sortBy{t => terms(t.l.v.ID)}
+    var minCostVariables = c.terms.filter(_.l.v.state == State.OPEN).diff(noCostVariables).sortBy { t => terms(t.l.v.ID)}
     //sorted list of the cost variables from max to min
     var maxKoeffVariables = c.terms.filter(_.l.v.state == State.OPEN).diff(noCostVariables).sortBy(_.a).reverse
     //k is the degree of the cardinality constraint
     var k = 0
     var s: BigInt = 0
-    while(s < degree_ && !maxKoeffVariables.isEmpty){
+    while (s < degree_ && !maxKoeffVariables.isEmpty) {
       s += maxKoeffVariables(0).a
       maxKoeffVariables = maxKoeffVariables.tail
       k += 1
     }
     var cost: BigInt = 0
-    for(i <- 0 to k-1){
+    for (i <- 0 to k - 1) {
       cost += terms(minCostVariables(i).l.v.ID)
     }
     cost
   }
-
-
 }

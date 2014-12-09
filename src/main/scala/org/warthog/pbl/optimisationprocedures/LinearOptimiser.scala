@@ -6,8 +6,8 @@ import org.warthog.pbl.decisionprocedures.{Decisionprocedure, CDCLLike}
 /**
  * Implementation of an optimiser, which uses linear search to compute the optimum
  */
-class LinearOptimiser extends Optimisationprocedure{
-  val solver : Decisionprocedure = new CDCLLike()
+class LinearOptimiser extends Optimisationprocedure {
+  val solver: Decisionprocedure = new CDCLLike()
   //the original parsed minimisation function of the opb-file
   var minimizeFunction: List[PBLTerm] = null
   //the computed maximisation function out of the minimisation function
@@ -16,7 +16,6 @@ class LinearOptimiser extends Optimisationprocedure{
   var minOptimum: BigInt = null
   // the optimum computed by the maximisation function
   var maxOptimum: BigInt = null
-
 
   def add(c: Constraint) = solver.add(c)
 
@@ -54,7 +53,7 @@ class LinearOptimiser extends Optimisationprocedure{
     }
 
     //start to optimize
-    while(solver.solve(List[Constraint](maximizeFunction.copy))){
+    while (solver.solve(List[Constraint](maximizeFunction.copy))) {
       //compute the max and min optimum
       maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
       minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
@@ -65,11 +64,10 @@ class LinearOptimiser extends Optimisationprocedure{
     }
 
     //return the optimum
-    if(minOptimum == null){
+    if (minOptimum == null) {
       None
     } else {
       Some(minOptimum)
     }
   }
-
 }
