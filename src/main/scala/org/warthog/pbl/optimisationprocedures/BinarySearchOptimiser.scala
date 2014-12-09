@@ -6,9 +6,8 @@ import org.warthog.pbl.decisionprocedures.{CDCLLike, DecisionProcedure}
 /**
  * Implementation of an optimiser, which uses binary search to compute the optimum
  */
-class BinarySearchOptimiser extends OptimisationProcedure {
+class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationProcedure {
 
-  val solver: DecisionProcedure = new CDCLLike()
   //the original parsed minimisation function of the opb-file
   var minimizeFunction: List[PBLTerm] = null
   //the computed maximisation function out of the minimisation function
