@@ -11,7 +11,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
  */
 class CDCLLike extends DecisionProcedure {
 
-  var instance = List[Constraint]()
+  var constraints = List[Constraint]()
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
   var units = mutable.HashSet[Constraint]()
@@ -28,9 +28,9 @@ class CDCLLike extends DecisionProcedure {
     }
 
     c.initWatchedLiterals match {
-      case ConstraintState.UNIT => units += c; instance ::= c
-      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::= c
-      case _ => instance ::= c
+      case ConstraintState.UNIT => units += c; constraints ::= c
+      case ConstraintState.EMPTY => containsEmptyConstraint = true; constraints ::= c
+      case _ => constraints ::= c
     }
   }
 
@@ -83,7 +83,7 @@ class CDCLLike extends DecisionProcedure {
   }
 
   private def initConstraints {
-    instance.map { c =>
+    constraints.map { c =>
       c.initWatchedLiterals match {
         case ConstraintState.UNIT => units += c;
         case ConstraintState.EMPTY => containsEmptyConstraint = true;
@@ -98,15 +98,15 @@ class CDCLLike extends DecisionProcedure {
    */
   def reset() {
     level = 0
-    stack = new mutable.Stack[PBLVariable]()
+    stack.clear()
     this.containsEmptyConstraint = false
 
     //delete all learned Constraints
-    instance = instance.filterNot(_.removable)
+    constraints = constraints.filterNot(_.removable)
 
     //reset all variables
-    variables = mutable.HashMap[Int, PBLVariable]()
-    instance.map { c =>
+    variables.clear()
+    constraints.map { c =>
       c.terms.map { t =>
         val v = t.l.v
         v.state = State.OPEN
@@ -118,9 +118,9 @@ class CDCLLike extends DecisionProcedure {
       }
     }
 
-    units = mutable.HashSet[Constraint]()
+    units.clear()
     //reset all constraints and init the watched literals
-    instance.map { c =>
+    constraints.map { c =>
       c match {
         case cardinality: PBLCardinalityConstraint => {
           cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
@@ -205,7 +205,7 @@ class CDCLLike extends DecisionProcedure {
     }
     learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
     //add the learned clause to the instance
-    instance +:= learnedClause
+    constraints +:= learnedClause
     //update the units
     units = mutable.HashSet[Constraint](learnedClause)
     //if learnedClause has only one literal
@@ -230,7 +230,7 @@ class CDCLLike extends DecisionProcedure {
     * The problem is if you want to learn PBLConstraints you need the slack under the current assignment.
     * Updating the slack while computing the learned clause would lead to problems (in my opinion)
     */
-    instance.map { c =>
+    constraints.map { c =>
       if (c.isInstanceOf[PBLConstraint]) {
         //update slack and currentSum
         c.asInstanceOf[PBLConstraint].updateSlack
