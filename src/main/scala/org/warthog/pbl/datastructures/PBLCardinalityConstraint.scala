@@ -17,7 +17,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
   /**
    * Reduce all coefficients to 1 and adapt the degree accordingly
    */
-  def reduceCoefficients() = {
+  def reduceCoefficients() {
     val coeff = terms(0).a
     terms.map(_.a = BigInt(1))
     val tuple = (degree /% coeff)

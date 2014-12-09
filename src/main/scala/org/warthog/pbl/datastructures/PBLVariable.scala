@@ -65,7 +65,7 @@ class PBLVariable(val name: String) {
     emptyConstraint
   }
 
-  def unassign() = {
+  def unassign() {
     this.level = -1
     this.state = State.OPEN
     this.reason = null

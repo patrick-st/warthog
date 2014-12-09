@@ -19,7 +19,7 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
   var units = mutable.HashSet[Constraint]()
   var containsEmptyConstraint = false
 
-  def add(c: Constraint) = {
+  def add(c: Constraint) {
     //exchange variables if necessary
     c.terms.map{t =>
       t.l.v = this.variables.getOrElseUpdate(t.l.v.ID,t.l.v)
@@ -34,7 +34,7 @@ class BranchAndBoundOptimiser extends Optimisationprocedure {
 
   def add(constraintList: List[Constraint]) = constraintList.map(this.add(_))
 
-  def reset(): Unit = {
+  def reset() {
     this.backtrack(0)
     this.optimum = null
     this.objectiveFunction = null

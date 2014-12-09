@@ -16,13 +16,13 @@ trait Decisionprocedure {
    * Add a constraint which has to be solved
    * @param c the constraint
    */
-  def add(c: Constraint): Unit
+  def add(c: Constraint)
 
   /**
    * Add a several constraints which have to be solved
    * @param constraints the constraints
    */
-  def add(constraints: List[Constraint]): Unit
+  def add(constraints: List[Constraint])
 
   /**
    * Solve the added and additional given constraints
@@ -35,6 +35,6 @@ trait Decisionprocedure {
    * Reset the solver to initial state.
    * The constraints, added by the add-functions, aren't removed
    */
-  def reset(): Unit
+  def reset()
 }
 

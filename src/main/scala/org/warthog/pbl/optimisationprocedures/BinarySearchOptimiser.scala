@@ -21,7 +21,7 @@ class BinarySearchOptimiser extends Optimisationprocedure{
 
   def add(constraints: List[Constraint]) = this.solver.add(constraints)
 
-  def reset() = {
+  def reset() {
     this.solver.reset()
     this.minimizeFunction = null
     this.maximizeFunction = null

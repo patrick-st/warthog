@@ -22,7 +22,7 @@ class CDCLLike extends Decisionprocedure {
    * Adding a constraint to the instance
    * @param c the constraint to add
    */
-  def add(c: Constraint) = {
+  def add(c: Constraint) {
     //exchange variables if necessary
     c.terms.map{t =>
      t.l.v = this.variables.getOrElseUpdate(t.l.v.ID,t.l.v)
@@ -39,7 +39,7 @@ class CDCLLike extends Decisionprocedure {
    * Adding a list of constraints to the instance
    * @param constraintList the list to add
    */
-  def add(constraintList: List[Constraint]) = {
+  def add(constraintList: List[Constraint]) {
     constraintList.map(this.add(_))
   }
 
@@ -87,13 +87,13 @@ class CDCLLike extends Decisionprocedure {
   }
 
 
-  def printVariables = {
+  def printVariables {
     this.variables.values.toList.sortBy(_.ID).map{v =>
     println(v.ID + ": " + v.state)
     }
 }
 
-  private def initConstraints = {
+  private def initConstraints {
     this.instance.map{c =>
           c.initWatchedLiterals match {
             case ConstraintState.UNIT => this.units += c;
@@ -107,7 +107,7 @@ class CDCLLike extends Decisionprocedure {
   /**
    * Method resets the instance to the initial state
    */
-  def reset(): Unit = {
+  def reset() {
     this.level = 0
     this.stack = new mutable.Stack[PBLVariable]()
     this.containsEmptyConstraint = false
@@ -231,7 +231,7 @@ class CDCLLike extends Decisionprocedure {
    * Backtracking to the given level
    * @param level to backtrack
    */
-  private def backtrack(level: Int): Unit = {
+  private def backtrack(level: Int) {
     while (!stack.isEmpty && stack.top.level > level) {
       val vari = stack.pop()
       vari.unassign()

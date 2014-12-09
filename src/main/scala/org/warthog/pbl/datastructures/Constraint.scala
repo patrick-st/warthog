@@ -56,7 +56,8 @@ abstract class Constraint (){
   /**
    * Normalize the constraint by eliminating all negative coefficients
    */
-  def normalize() = {
+
+  def normalize() {
     terms.map { t =>
       if (t.a < 0) {
         t.a = t.a.abs
@@ -65,14 +66,13 @@ abstract class Constraint (){
       }
     }
   }
-
   /**
    * Returns a copy of the constraint
    * @return the copied constraint
    */
   def copy: Constraint
 
-  def *(x: BigInt) =  {
+  def *(x: BigInt) {
     terms.map(_.a *= x)
     degree *= x
   }

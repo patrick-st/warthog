@@ -120,7 +120,7 @@ object LearnUtil {
    * @param level
    * @return
    */
-  private def is1UIP(c1: Constraint, level: Int) ={
+  private def is1UIP(c1: Constraint, level: Int) = {
     c1.terms.filter(_.l.v.level == level).size == 1
   }
 

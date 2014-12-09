@@ -99,7 +99,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
     else ConstraintState.SUCCESS
   }
 
-  def updateSlack = {
+  def updateSlack {
     this.slack = terms.foldLeft(BigInt(0)){(sum,term) =>
       if(!term.l.evaluates2False)
         sum + term.a
@@ -108,7 +108,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
     } - degree
   }
 
-  def updateCurrentSum = {
+  def updateCurrentSum {
     this.currentSum = terms.foldLeft(BigInt(0)){(sum, term) =>
       if(term.l.evaluates2True)
         sum + term.a
