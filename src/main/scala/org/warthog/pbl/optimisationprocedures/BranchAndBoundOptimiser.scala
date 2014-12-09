@@ -32,8 +32,6 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     }
   }
 
-  def add(constraintList: List[Constraint]) = constraintList.map(add(_))
-
   def reset() {
     backtrack(0)
     optimum = null

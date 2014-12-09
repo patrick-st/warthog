@@ -19,8 +19,6 @@ class LinearOptimiser extends OptimisationProcedure {
 
   def add(c: Constraint) = solver.add(c)
 
-  def add(constraints: List[Constraint]) = solver.add(constraints)
-
   def reset() {
     solver.reset()
     minimizeFunction = null
