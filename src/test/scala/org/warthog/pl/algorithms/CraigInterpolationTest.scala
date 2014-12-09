@@ -23,17 +23,48 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.decisionprocedures.satsolver
+package org.warthog.pl.algorithms
 
-import org.warthog.pl.formulas.{PLAtom, PL}
-import org.warthog.generic.formulas.{And, Formula}
+import org.warthog.pl.parsers.tptp._
+import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause => Clause}
+import org.warthog.pl.algorithms.CraigInterpolation._
 
-/**
- * A (partial) Model representing a satisfying assignment of a propositional formula.
- */
-case class Model(positiveVariables: List[PLAtom], negativeVariables: List[PLAtom]) {
+import org.specs2.mutable.Specification
 
-  def toFormula = And(And(positiveVariables: _*), And(negativeVariables: _*))
+class CraigInterpolationTest extends Specification {
+  "Craig Interpolant of x and x" should {
+    "be formula x" in {
+      pinterpolate("x".pl, "x".pl) must be equalTo "x".pl
+    }
+  }
 
-  override def toString = positiveVariables.mkString(",") + negativeVariables.map(l => "-" + l).mkString(",")
+  "Craig Interpolant of x & y and x" should {
+    "be formula x" in {
+      pinterpolate("x & y".pl, "x".pl) must be equalTo "x".pl
+    }
+  }
+
+  "Craig Interpolant of x & y and y" should {
+    "be formula y" in {
+      pinterpolate("x & y".pl, "y".pl) must be equalTo "y".pl
+    }
+  }
+
+  "Craig Interpolant of x and x | y" should {
+    "be formula x" in {
+      pinterpolate("x".pl, "x | y".pl) must be equalTo "x".pl
+    }
+  }
+
+  "Craig Interpolant of y and x | y" should {
+    "be formula y" in {
+      pinterpolate("y".pl, "x | y".pl) must be equalTo "y".pl
+    }
+  }
+
+  "Craig Interpolant of ~(p & q) => (~r & q) and (t => p) | (t => ~r)" should {
+    "be formula p | ~r" in {
+      pinterpolate("~(p & q) => (~r & q)".pl, "(t => p) | (t => ~r)".pl) must be equalTo "~p => ~r".pl
+    }
+  }
 }

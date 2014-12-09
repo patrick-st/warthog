@@ -23,17 +23,54 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.decisionprocedures.satsolver
+package org.warthog.pl.parsers.maxsat
 
-import org.warthog.pl.formulas.{PLAtom, PL}
-import org.warthog.generic.formulas.{And, Formula}
+import collection.mutable.ListBuffer
+import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
+import io.Source
 
 /**
- * A (partial) Model representing a satisfying assignment of a propositional formula.
+ * A Reader for partial MaxSAT files.
+ *
+ * Reference: http://maxsat.ia.udl.cat/requirements/
  */
-case class Model(positiveVariables: List[PLAtom], negativeVariables: List[PLAtom]) {
+class PartialMaxSATReader {
+  var topWeight: Long = -1
+  var hardClauses = new ListBuffer[ImmutablePLClause]
+  var softClauses = new ListBuffer[ImmutablePLClause]
 
-  def toFormula = And(And(positiveVariables: _*), And(negativeVariables: _*))
+  private def reset() {
+    topWeight = -1
+    hardClauses.clear()
+    softClauses.clear()
+  }
 
-  override def toString = positiveVariables.mkString(",") + negativeVariables.map(l => "-" + l).mkString(",")
+  def read(filePath: String) {
+    reset()
+    Source.fromFile(filePath).getLines().foreach(line => processLine(line.trim()))
+  }
+
+  private def processLine(line: String) {
+    line.trim()(0) match {
+      case 'c' => // comment line
+      case 'p' => processProblemLine(line)
+      case _ => processClauseLine(line)
+    }
+  }
+
+  private def processProblemLine(line: String) {
+    val parts = line.split("\\s+")
+    topWeight = parts(4).toLong
+  }
+
+  private def processClauseLine(line: String) {
+    val parts = line.split("\\s+")
+    val clause = new ImmutablePLClause(parts.drop(1).filter(_ != "0").map(_.toInt).map(PLLiteral(_)).toList)
+    if (isHardClause(parts))
+      hardClauses += clause
+    else
+      softClauses += clause
+  }
+
+  private def isHardClause(parts: Array[String]) = parts(0).toLong == topWeight
 }

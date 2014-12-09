@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,25 +25,30 @@
 
 package org.warthog.pl.algorithms
 
-import org.warthog.pl.formulas.{ PL, PLAtom }
-import org.warthog.generic.formulas.{ Formula, Verum, Falsum }
+import org.warthog.pl.formulas.{PL, PLAtom}
+import org.warthog.generic.formulas.{Formula, Verum, Falsum}
 
 /**
-  * Propositional Craig Interpolation
-  */
+ * Propositional Craig Interpolation.
+ *
+ * Description:
+ * Let phi and psi two propositional formulas such that phi => psi holds.
+ * A Craig Interpolant of phi and psi is a propositional formula rho such that
+ * a) phi => rho  and
+ * b) rho => psi  and
+ * c) vars(rho) = vars(phi) intersection vars(psi).
+ */
 object CraigInterpolation {
   /**
-    * Compute the craig interpolant of two propositional formulas
-    * @param p the first formula
-    * @param q the second formula
-    * @return the craig interpolant of p and q
-    */
+   * Compute the craig interpolant of two propositional formulas
+   * @param p the first formula
+   * @param q the second formula
+   * @return the craig interpolant of p and q
+   */
   def pinterpolate(p: Formula[PL], q: Formula[PL]): Formula[PL] = {
-    val setminus = p.vars.filterNot(q.vars.contains(_)).asInstanceOf[List[PLAtom]]
-    setminus.size match {
-      case 0 => p
-      case _ => pinterpolate(p.substitute(setminus.head, Falsum()).removeBooleanConstants ||
-        p.substitute(setminus.head, Verum()).removeBooleanConstants, q).removeBooleanConstants
-    }
+    val setMinus = p.vars.filterNot(q.vars.contains(_)).asInstanceOf[List[PLAtom]]
+    setMinus.foldLeft(p)((expandedP, v) =>
+      expandedP.substitute(v, Falsum()).removeBooleanConstants ||
+        expandedP.substitute(v, Verum()).removeBooleanConstants).removeBooleanConstants
   }
 }

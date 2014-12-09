@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,19 +27,20 @@ package org.warthog.pl.decisionprocedures.satsolver.impl.picosat
 
 import scala.collection.mutable.Map
 
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Infinity, Duration, Solver}
-import org.warthog.pl.io.CNFUtil
-import org.warthog.pl.formulas.PL
+import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.formulas.{PLAtom, PL}
 import org.warthog.generic.formulas._
+import org.warthog.pl.transformations.CNFUtil
+import org.warthog.pl.datastructures.cnf.ImmutablePLClause
 
 /**
- * Solver Wrapper for Picosat
+ * Solver Wrapper for Picosat.
  */
 class Picosat extends Solver {
   private val jPicosatInstance = new JPicosat()
-  private val fmToVar = Map[Formula[PL], Int]()
-  private val varToFm = Map[Int, Formula[PL]]()
-  private var clauses: List[Set[Int]] = Nil
+  private val varToID = Map[PLAtom, Int]()
+  private val idToVar = Map[Int, PLAtom]()
+  private var clausesStack: List[Set[Int]] = Nil
   private var marks: List[Int] = Nil
   private var lastState = Solver.UNKNOWN
 
@@ -48,50 +49,44 @@ class Picosat extends Solver {
   override def reset() {
     jPicosatInstance.picosat_reset()
     jPicosatInstance.picosat_init()
-    fmToVar.clear()
-    varToFm.clear()
-    clauses = Nil
+    varToID.clear()
+    idToVar.clear()
+    clausesStack = Nil
     marks = Nil
     lastState = Solver.UNKNOWN
   }
 
-  override def add(fm: Formula[PL]) {
-    /*
-     * Convert clause list to List of Set of Ints, update Int->Formula
-     * and Formula->Int mapping if necessary
-     */
-    val lcls = CNFUtil.toList(fm) match {
-      case Nil => Nil
-      case l => l.map(_.map(f => {
-        val (at, mul) = f match {
-          case Not(ff) => (ff, -1)
-          case _ => (f, 1)
-        }
-        fmToVar.getOrElseUpdate(at, {
-          val lit = fmToVar.size + 1
-          varToFm += (lit -> at)
-          lit
-        }) * mul
-      }).toSet)
-    }
-    /* add clauses to solver */
-    lcls.foreach(addClauses)
+  override def add(formula: Formula[PL]) {
+    addClausesAndUpdateLastState(CNFUtil.toImmutableCNF(formula))
+  }
 
-    /* add clauses to solver stack */
-    clauses = lcls ++ clauses
+  private def addClausesAndUpdateLastState(clauses: List[ImmutablePLClause]) {
+    val clausesWithIDs = clauses.map(getIDsWithPhase)
+    clausesWithIDs.foreach(addClauseWithIDs)
+    clausesStack = clausesWithIDs ++ clausesStack
 
-    /* an unsatisfiable formula doesn't get satisfiable by adding clauses */
     if (lastState != Solver.UNSAT)
       lastState = Solver.UNKNOWN
   }
 
-  private def addClauses(cs: Set[Int]): Int = {
-    cs.foreach(jPicosatInstance.picosat_add(_))
+  private def getIDsWithPhase(clause: ImmutablePLClause): Set[Int] = {
+    clause.literals.map(literal => {
+      val (v, phaseFactor) = (literal.variable, if (literal.phase) 1 else -1)
+      varToID.getOrElseUpdate(v, {
+        val nextID = varToID.size + 1
+        idToVar += (nextID -> v)
+        nextID
+      }) * phaseFactor
+    }).toSet
+  }
+
+  private def addClauseWithIDs(clause: Set[Int]) {
+    clause.foreach(jPicosatInstance.picosat_add(_))
     jPicosatInstance.picosat_add(0)
   }
 
   override def mark() {
-    marks = clauses.length :: marks
+    marks = clausesStack.length :: marks
   }
 
   override def undo() {
@@ -100,28 +95,20 @@ class Picosat extends Solver {
         marks = t
         jPicosatInstance.picosat_reset()
         jPicosatInstance.picosat_init()
-        clauses = clauses.drop(clauses.length - h)
-        clauses.foreach(addClauses)
+        clausesStack = clausesStack.drop(clausesStack.length - h)
+        clausesStack.foreach(addClauseWithIDs)
         lastState = Solver.UNKNOWN
       }
-      case _ =>
+      case _ => // No mark, then ignore undo
     }
   }
 
-  override def sat(to: Duration): Int = {
-    if (lastState == Solver.UNKNOWN) {
-      /* call sat only if solver is in unknown state */
-      lastState = Picosat.jPicoSatStateToSolverState(to match {
-        case Infinity => jPicosatInstance.picosat_sat(JPicosat.INFINITY_DECISION_LEVELS)
-        case _ => jPicosatInstance.picosat_sat(to.to.toInt)
-      })
-    }
-    if (lastState == Solver.SAT)
-      Solver.SAT
-    else if (lastState == Solver.UNSAT)
-      Solver.UNSAT
-    else
-      Solver.UNKNOWN
+  override def sat(): Int = {
+    if (lastState == Solver.UNKNOWN)
+    /* call sat only if solver is in unknown state */
+      lastState = Picosat.jPicoSatStateToSolverState(
+        jPicosatInstance.picosat_sat(JPicosat.INFINITY_DECISION_LEVELS))
+    lastState
   }
 
   override def getModel(): Option[Model] = {
@@ -136,11 +123,11 @@ class Picosat extends Solver {
           if j != 0 /* filter out unassigned variables */
         } yield j)
         val positiveVariables = picosatLiterals.filter(picosatLit => picosatLit > 0)
-          .filter(picosatLit => varToFm.contains(picosatLit))
-          .map(picosatLit => varToFm(picosatLit)).toList
+          .filter(picosatLit => idToVar.contains(picosatLit))
+          .map(picosatLit => idToVar(picosatLit)).toList
         val negativeVariables = picosatLiterals.filter(picosatLit => picosatLit < 0)
-          .filter(picosatLit => varToFm.contains(picosatLit))
-          .map(picosatLit => varToFm(picosatLit)).toList
+          .filter(picosatLit => idToVar.contains(picosatLit))
+          .map(picosatLit => idToVar(picosatLit)).toList
         Some(Model(positiveVariables, negativeVariables))
       }
     }
