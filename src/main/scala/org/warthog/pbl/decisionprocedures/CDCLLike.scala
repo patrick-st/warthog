@@ -35,14 +35,6 @@ class CDCLLike extends DecisionProcedure {
   }
 
   /**
-   * Adding a list of constraints to the instance
-   * @param constraintList the list to add
-   */
-  def add(constraintList: List[Constraint]) {
-    constraintList.map(this.add(_))
-  }
-
-  /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
    */
