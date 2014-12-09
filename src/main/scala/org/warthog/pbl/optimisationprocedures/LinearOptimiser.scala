@@ -1,13 +1,13 @@
 package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures.{PBLConstraint, PBLCardinalityConstraint, Constraint, PBLTerm}
-import org.warthog.pbl.decisionprocedures.{Decisionprocedure, CDCLLike}
+import org.warthog.pbl.decisionprocedures.{DecisionProcedure, CDCLLike}
 
 /**
  * Implementation of an optimiser, which uses linear search to compute the optimum
  */
-class LinearOptimiser extends Optimisationprocedure {
-  val solver: Decisionprocedure = new CDCLLike()
+class LinearOptimiser extends OptimisationProcedure {
+  val solver: DecisionProcedure = new CDCLLike()
   //the original parsed minimisation function of the opb-file
   var minimizeFunction: List[PBLTerm] = null
   //the computed maximisation function out of the minimisation function

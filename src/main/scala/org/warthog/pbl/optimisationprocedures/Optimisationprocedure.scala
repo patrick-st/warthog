@@ -5,7 +5,7 @@ import org.warthog.pbl.datastructures.{PBLTerm, Constraint}
 /**
  * Interface for Pseudo-Boolean
  */
-trait Optimisationprocedure {
+trait OptimisationProcedure {
 
   /**
    * Add a constraint which has to be solved

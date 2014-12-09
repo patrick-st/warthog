@@ -9,7 +9,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 /**
  * Implements a CDCL like approach to solve pseudo-boolean constraints
  */
-class CDCLLike extends Decisionprocedure {
+class CDCLLike extends DecisionProcedure {
 
   var instance = List[Constraint]()
   var level = 0

@@ -7,7 +7,7 @@ import scala.collection.mutable
 /**
  * Interface for Pseudo-Boolean Solvers
  */
-trait Decisionprocedure {
+trait DecisionProcedure {
 
   /**
    * The variables of the instance to solve

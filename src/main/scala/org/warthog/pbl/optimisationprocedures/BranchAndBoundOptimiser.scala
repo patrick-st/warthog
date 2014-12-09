@@ -7,7 +7,7 @@ import scala.collection.mutable
 /**
  * Implementation of a branch and bound optimisation approach
  */
-class BranchAndBoundOptimiser extends Optimisationprocedure {
+class BranchAndBoundOptimiser extends OptimisationProcedure {
 
   var instance: List[Constraint] = List[Constraint]()
   var optimum: BigInt = null
