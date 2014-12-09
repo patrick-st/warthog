@@ -24,7 +24,7 @@ trait DecisionProcedure {
    * Add a several constraints which have to be solved
    * @param constraints the constraints
    */
-  def add(constraints: List[Constraint]) = constraints.map(add(_))
+  def add(constraints: List[Constraint]): Unit = constraints.map(add(_))
 
   /**
    * Solve the added and additional given constraints
