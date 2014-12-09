@@ -22,7 +22,7 @@ class PBLVariable(val name: String) {
 
   override def equals(p: Any) = {
     if(p.isInstanceOf[PBLVariable]){
-      p.asInstanceOf[PBLVariable].name == this.name
+      p.asInstanceOf[PBLVariable].name == name
     } else
       false
   }
@@ -66,9 +66,9 @@ class PBLVariable(val name: String) {
   }
 
   def unassign() {
-    this.level = -1
-    this.state = State.OPEN
-    this.reason = null
+    level = -1
+    state = State.OPEN
+    reason = null
   }
 }
 

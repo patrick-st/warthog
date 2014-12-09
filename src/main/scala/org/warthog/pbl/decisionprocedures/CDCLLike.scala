@@ -25,13 +25,13 @@ class CDCLLike extends Decisionprocedure {
   def add(c: Constraint) {
     //exchange variables if necessary
     c.terms.map{t =>
-     t.l.v = this.variables.getOrElseUpdate(t.l.v.ID,t.l.v)
+     t.l.v = variables.getOrElseUpdate(t.l.v.ID,t.l.v)
     }
 
     c.initWatchedLiterals match {
-      case ConstraintState.UNIT => this.units += c; this.instance ::= c
-      case ConstraintState.EMPTY => this.containsEmptyConstraint = true; this.instance ::=c
-      case _ => this.instance ::= c
+      case ConstraintState.UNIT => units += c; instance ::= c
+      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::=c
+      case _ => instance ::= c
     }
   }
 
@@ -52,32 +52,32 @@ class CDCLLike extends Decisionprocedure {
     //enforce that all constraints are removable
     constraints.map(_.removable = true)
     //add the constraints to the instance
-    this.add(constraints)
+    add(constraints)
     //check if the instance contains an empty constraint
     if(this.containsEmptyConstraint)
       return false
 
     //else try to solve the instance
     while (true) {
-      this.unitPropagation match {
+      unitPropagation match {
         case Some(c) => {
           //conflict occurred => conflict has to be analyzed
-          val backtrackLevel = this.analyzeConflict(c)
+          val backtrackLevel = analyzeConflict(c)
           if (backtrackLevel == -1)
             return false
           //backtracking to the computed level
-          this.backtrack(backtrackLevel)
+          backtrack(backtrackLevel)
         }
         case None => {
           //non conflict occurred => assign a new chosen variable
-          this.getUnassignedVar match {
+          getUnassignedVar match {
             case None => return true
             case Some(v) => {
-              this.level += 1
+              level += 1
               v.assign(false, units, level, null)
               //update activity
-              this.variables.values.map(_.activity *= 0.95)
-              this.stack.push(v)
+              variables.values.map(_.activity *= 0.95)
+              stack.push(v)
             }
           }
         }
@@ -88,16 +88,16 @@ class CDCLLike extends Decisionprocedure {
 
 
   def printVariables {
-    this.variables.values.toList.sortBy(_.ID).map{v =>
+    variables.values.toList.sortBy(_.ID).map{v =>
     println(v.ID + ": " + v.state)
     }
 }
 
   private def initConstraints {
-    this.instance.map{c =>
+    instance.map{c =>
           c.initWatchedLiterals match {
-            case ConstraintState.UNIT => this.units += c;
-            case ConstraintState.EMPTY => this.containsEmptyConstraint = true;
+            case ConstraintState.UNIT => units += c;
+            case ConstraintState.EMPTY => containsEmptyConstraint = true;
             //ignore the sat constraints
             case _  =>
           }
@@ -108,16 +108,16 @@ class CDCLLike extends Decisionprocedure {
    * Method resets the instance to the initial state
    */
   def reset() {
-    this.level = 0
-    this.stack = new mutable.Stack[PBLVariable]()
+    level = 0
+    stack = new mutable.Stack[PBLVariable]()
     this.containsEmptyConstraint = false
 
     //delete all learned Constraints
-    this.instance = this.instance.filterNot(_.removable)
+    instance = instance.filterNot(_.removable)
 
     //reset all variables
-    this.variables = mutable.HashMap[Int, PBLVariable]()
-    this.instance.map{c =>
+    variables = mutable.HashMap[Int, PBLVariable]()
+    instance.map{c =>
       c.terms.map{t =>
         val v = t.l.v
         v.state = State.OPEN
@@ -125,13 +125,13 @@ class CDCLLike extends Decisionprocedure {
         v.level = -1
         v.reason = null
         v.activity = 0.0
-        this.variables.update(t.l.v.ID,v)
+        variables.update(t.l.v.ID,v)
       }
     }
 
-    this.units =  mutable.HashSet[Constraint]()
+    units =  mutable.HashSet[Constraint]()
     //reset all constraints and init the watched literals
-    this.instance.map{c =>
+    instance.map{c =>
       c match {
         case cardinality: PBLCardinalityConstraint => {
           cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
@@ -142,8 +142,7 @@ class CDCLLike extends Decisionprocedure {
         }
       }
     }
-
-    this.initConstraints
+    initConstraints
   }
 
   /**
@@ -203,7 +202,7 @@ class CDCLLike extends Decisionprocedure {
    */
   private def analyzeConflict(emptyClause: Constraint): Int = {
     var backtrackLevel = -1
-    if (this.level == 0)
+    if (level == 0)
       return -1
     //compute the clause to learn
     var learnedClause = LearnUtil.learnClause(emptyClause, stack, level)
@@ -216,7 +215,7 @@ class CDCLLike extends Decisionprocedure {
         backtrackLevel = level
       }
     }
-    learnedClause = this.setWatchedLiterals(learnedClause, backtrackLevel)
+    learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
     //add the learned clause to the instance
     instance +:= learnedClause
     //update the units

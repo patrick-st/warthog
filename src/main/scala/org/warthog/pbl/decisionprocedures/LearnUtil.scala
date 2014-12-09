@@ -18,7 +18,7 @@ object LearnUtil {
    * @return the new clause to learn
    */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) =
-    this.learn(reduce2Clause,reduce2Clause,resolve,conflict,stack,level)
+    learn(reduce2Clause,reduce2Clause,resolve,conflict,stack,level)
 
 
   /**
@@ -45,9 +45,9 @@ object LearnUtil {
       val v = stack.pop()
       c1 = reduce1(c1,v)
       val c2 = reduce2(v.reason, v)
-      c1 = this.resolve(c1, c2, v)
+      c1 = resolve(c1, c2, v)
       v.unassign()
-      if(this.is1UIP(c1, level)){
+      if(is1UIP(c1, level)){
         return c1
       }
     }
@@ -104,7 +104,7 @@ object LearnUtil {
    * @return the resolvent
    */
   private def resolve(c1: Constraint, c2: Constraint, v: PBLVariable) = {
-    if(this.isResolvable(c1,c2,v)){
+    if(isResolvable(c1,c2,v)){
       val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy )
       new PBLCardinalityConstraint(newTerms, 1, true)
     } else {

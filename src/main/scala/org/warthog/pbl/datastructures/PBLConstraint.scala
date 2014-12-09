@@ -17,7 +17,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.removable)
+  def copy = new PBLConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, removable)
 
   /**
    * Initialize the watched literals.
@@ -100,7 +100,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
   }
 
   def updateSlack {
-    this.slack = terms.foldLeft(BigInt(0)){(sum,term) =>
+    slack = terms.foldLeft(BigInt(0)){(sum,term) =>
       if(!term.l.evaluates2False)
         sum + term.a
       else
@@ -109,7 +109,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
   }
 
   def updateCurrentSum {
-    this.currentSum = terms.foldLeft(BigInt(0)){(sum, term) =>
+    currentSum = terms.foldLeft(BigInt(0)){(sum, term) =>
       if(term.l.evaluates2True)
         sum + term.a
       else

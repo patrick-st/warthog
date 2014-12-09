@@ -17,7 +17,7 @@ class PBLLiteral(var v: PBLVariable, val phase: Boolean = true){
 
   override def equals(p: Any) = {
     if(p.isInstanceOf[PBLLiteral]){
-      p.asInstanceOf[PBLLiteral].v == this.v && (p.asInstanceOf[PBLLiteral].phase == this.phase)
+      p.asInstanceOf[PBLLiteral].v == v && (p.asInstanceOf[PBLLiteral].phase == phase)
     } else
       false
   }

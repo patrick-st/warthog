@@ -16,7 +16,7 @@ object PBCompetitionReader {
 
 
   def getInstance(path: String) = {
-    val instance = this.readCompetitionFormat(path)
+    val instance = readCompetitionFormat(path)
     (instance._1,instance._2,instance._3)
 
   }

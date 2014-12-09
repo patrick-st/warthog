@@ -13,7 +13,7 @@ class PBLTerm(var a: BigInt, var l: PBLLiteral) {
 
   override def equals(p: Any) = {
     if(p.isInstanceOf[PBLTerm]){
-      p.asInstanceOf[PBLTerm].a == this.a && p.asInstanceOf[PBLTerm].l == this.l
+      p.asInstanceOf[PBLTerm].a == a && p.asInstanceOf[PBLTerm].l == l
     } else
       false
   }

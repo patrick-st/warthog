@@ -28,7 +28,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    * Returns a copy of the constraint
    * @return the copied constraint
    */
-  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, this.removable)
+  def copy = new PBLCardinalityConstraint(terms.foldLeft(List[PBLTerm]())(_ :+ _.copy), degree, removable)
 
   /**
    * Initialize the watched literals.
@@ -110,7 +110,7 @@ class PBLCardinalityConstraint(var terms : List[PBLTerm], var degree : BigInt, v
    */
   private def getNewWatchedLiteral: Option[PBLTerm] = {
     var term: Option[PBLTerm] = None
-    val diff = this.terms diff watchedLiterals
+    val diff = terms diff watchedLiterals
     if(diff.exists{t =>
       term = Some(t)
       t.l.v.state == State.OPEN || t.l.evaluates2True

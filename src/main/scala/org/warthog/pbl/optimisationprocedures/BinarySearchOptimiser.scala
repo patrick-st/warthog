@@ -17,16 +17,16 @@ class BinarySearchOptimiser extends Optimisationprocedure{
   // the optimum computed by the maximisation function
   var maxOptimum: BigInt = null
 
-  def add(c: Constraint) = this.solver.add(c)
+  def add(c: Constraint) = solver.add(c)
 
-  def add(constraints: List[Constraint]) = this.solver.add(constraints)
+  def add(constraints: List[Constraint]) = solver.add(constraints)
 
   def reset() {
-    this.solver.reset()
-    this.minimizeFunction = null
-    this.maximizeFunction = null
-    this.minOptimum = null
-    this.maxOptimum = null
+    solver.reset()
+    minimizeFunction = null
+    maximizeFunction = null
+    minOptimum = null
+    maxOptimum = null
   }
 
 
@@ -37,7 +37,7 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     }
 
     //compute the minimize and maximize functions
-    this.minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     //compute the maximization function
     val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
     //multiply with -1 to get the maximization function
@@ -45,46 +45,46 @@ class BinarySearchOptimiser extends Optimisationprocedure{
     //check if objective function is cardinality
     if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
       //Note: set the removable flag to true
-      this.maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs, true)
     } else {
-      this.maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
     }
 
     //determine upper and lower bound for binary search
-    var upper = this.maximizeFunction.terms.map(_.a).sum
-    var lower = this.maximizeFunction.degree
+    var upper = maximizeFunction.terms.map(_.a).sum
+    var lower = maximizeFunction.degree
     var middle = (lower + upper) / 2
     //enforce  objectiveFunction >= middle
-    var lowerBoundConstraint = this.maximizeFunction.copy
+    var lowerBoundConstraint = maximizeFunction.copy
     lowerBoundConstraint.degree = middle
 
     //enforce objectiveFunction <= upper
-    var upperBoundConstraint = this.computeUpperBoundConstraint(upper)
+    var upperBoundConstraint = computeUpperBoundConstraint(upper)
 
     while(lower <= upper){
-      if(this.solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint))){
+      if(solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint))){
         //update max and minOptimum
-        this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-        this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
+        maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+        minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
         //update the new lower bound
-        lower = this.maxOptimum + 1
+        lower = maxOptimum + 1
       } else {
         //update the new upper bound
         upper = middle-1
       }
       middle = (lower + upper) / 2
       //update the constraints
-      lowerBoundConstraint = this.maximizeFunction.copy
+      lowerBoundConstraint = maximizeFunction.copy
       lowerBoundConstraint.degree = middle
-      upperBoundConstraint = this.computeUpperBoundConstraint(upper)
+      upperBoundConstraint = computeUpperBoundConstraint(upper)
       solver.reset()
     }
 
     //return the optimum
-    if(this.minOptimum == null){
+    if(minOptimum == null){
       None
     } else {
-      Some(this.minOptimum)
+      Some(minOptimum)
     }
   }
 
@@ -95,7 +95,7 @@ class BinarySearchOptimiser extends Optimisationprocedure{
    * @return the constraint
    */
   private def computeUpperBoundConstraint(degree: BigInt): Constraint = {
-    val terms = this.maximizeFunction.terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    val terms = maximizeFunction.terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     terms.map(_.a *= -1)
     //check if constraint is cardinality or not
     if(maximizeFunction.terms.forall(_.a.abs == maximizeFunction.terms(0).a.abs)){

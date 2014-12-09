@@ -18,16 +18,16 @@ class LinearOptimiser extends Optimisationprocedure{
   var maxOptimum: BigInt = null
 
 
-  def add(c: Constraint) = this.solver.add(c)
+  def add(c: Constraint) = solver.add(c)
 
-  def add(constraints: List[Constraint]) = this.solver.add(constraints)
+  def add(constraints: List[Constraint]) = solver.add(constraints)
 
   def reset() {
-    this.solver.reset()
-    this.minimizeFunction = null
-    this.maximizeFunction = null
-    this.minOptimum = null
-    this.maxOptimum = null
+    solver.reset()
+    minimizeFunction = null
+    maximizeFunction = null
+    minOptimum = null
+    maxOptimum = null
   }
 
   /**
@@ -39,7 +39,7 @@ class LinearOptimiser extends Optimisationprocedure{
       t.l.v = solver.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
-    this.minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
 
     //compute the maximization function
     val rhs: BigInt = objectiveFunction.filter(_.a > 0).map(_.a).sum
@@ -48,27 +48,27 @@ class LinearOptimiser extends Optimisationprocedure{
     //check if objective function is cardinality
     if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
       //Note: set the removable flag to true
-      this.maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs, true)
     } else {
-      this.maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
     }
 
     //start to optimize
-    while(this.solver.solve(List[Constraint](this.maximizeFunction.copy))){
+    while(solver.solve(List[Constraint](maximizeFunction.copy))){
       //compute the max and min optimum
-      this.maxOptimum = this.maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-      this.minOptimum = this.minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
+      maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
+      minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
       //update the objective function
-      this.maximizeFunction.degree = this.maxOptimum + 1
+      maximizeFunction.degree = maxOptimum + 1
       //reset the solver
-      this.solver.reset()
+      solver.reset()
     }
 
     //return the optimum
-    if(this.minOptimum == null){
+    if(minOptimum == null){
       None
     } else {
-      Some(this.minOptimum)
+      Some(minOptimum)
     }
   }
 
