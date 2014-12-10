@@ -12,7 +12,7 @@ trait DecisionProcedure {
   /**
    * The variables of the instance to solve
    */
-  var variables = mutable.HashMap[Int, PBLVariable]()
+
 
   /**
    * Add a constraint which has to be solved
@@ -31,7 +31,7 @@ trait DecisionProcedure {
    * @param constraints additional constraints to solve
    * @return true if all constraints are satisfiable else false
    */
-  def solve(constraints: List[Constraint]): Boolean
+  def solve(constraints: List[Constraint]): Int
 
   /**
    * Reset the solver to initial state.
