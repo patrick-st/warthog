@@ -3,6 +3,7 @@ package org.warthog.pbl.decisionprocedures
 import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.pbl.datastructures._
 import org.warthog.pbl.parsers.PBCompetitionReader
+import org.warthog.pl.decisionprocedures.satsolver.Solver
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -10,12 +11,13 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
  * Implements a CDCL like approach to solve pseudo-boolean constraints
  */
 class CDCLLike extends DecisionProcedure {
-
+  var variables = mutable.HashMap[Int, PBLVariable]()
   var constraints = List[Constraint]()
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
   var units = mutable.HashSet[Constraint]()
-  var containsEmptyConstraint = false
+  var lastState = Solver.UNKNOWN
+  var numberOfLearnedClauses = 0
 
   /**
    * Adding a constraint to the instance
@@ -27,41 +29,51 @@ class CDCLLike extends DecisionProcedure {
       t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
-    c.initWatchedLiterals match {
-      case ConstraintState.UNIT => units += c; constraints ::= c
-      case ConstraintState.EMPTY => containsEmptyConstraint = true; constraints ::= c
-      case _ => constraints ::= c
+    constraints :+= c
+
+    //update the state
+    if (lastState != Solver.UNSAT)
+      lastState = Solver.UNKNOWN
+  }
+
+  def solve(constraints: List[Constraint]): Int = {
+    if (!constraints.isEmpty)
+      add(constraints)
+    //solve only if solver state is unknown
+    if (lastState == Solver.UNKNOWN) {
+      unassignVariables
+      initConstraints
+      solve
     }
+    cleanUp
+    lastState
   }
 
   /**
    * Main entry point for solving the given instance
    * @return true if the instance is sat else false
    */
-  def solve(constraints: List[Constraint]): Boolean = {
-    //enforce that all constraints are removable
-    constraints.map(_.removable = true)
-    //add the constraints to the instance
-    add(constraints)
-    //check if the instance contains an empty constraint
-    if (this.containsEmptyConstraint)
-      return false
-
+  private def solve() {
     //else try to solve the instance
     while (true) {
       unitPropagation match {
         case Some(c) => {
           //conflict occurred => conflict has to be analyzed
           val backtrackLevel = analyzeConflict(c)
-          if (backtrackLevel == -1)
-            return false
+          if (backtrackLevel == -1) {
+            lastState = Solver.UNSAT
+            return
+          }
           //backtracking to the computed level
           backtrack(backtrackLevel)
         }
         case None => {
           //non conflict occurred => assign a new chosen variable
           getUnassignedVar match {
-            case None => return true
+            case None => {
+              lastState = Solver.SAT
+              return
+            }
             case Some(v) => {
               level += 1
               v.assign(false, units, level, null)
@@ -73,7 +85,6 @@ class CDCLLike extends DecisionProcedure {
         }
       }
     }
-    false
   }
 
   def printVariables {
@@ -82,44 +93,37 @@ class CDCLLike extends DecisionProcedure {
     }
   }
 
-  private def initConstraints {
-    constraints.map { c =>
-      c.initWatchedLiterals match {
-        case ConstraintState.UNIT => units += c;
-        case ConstraintState.EMPTY => containsEmptyConstraint = true;
-        //ignore the sat constraints
-        case _ =>
-      }
-    }
+  private def unassignVariables {
+    variables.values.map(_.unassign())
   }
 
-  /**
-   * Method resets the instance to the initial state
-   */
-  def reset() {
+  private def initConstraints() {
+    constraints.map(c =>
+      c.initWatchedLiterals match {
+        case ConstraintState.UNIT => units += c;
+        case ConstraintState.EMPTY => lastState = Solver.UNSAT;
+        case _ =>
+      }
+    )
+  }
+
+  private def cleanUp {
     level = 0
     stack.clear()
-    this.containsEmptyConstraint = false
+    units.clear()
+    //delete all learned constraints
+    deleteConstraints(numberOfLearnedClauses)
+    numberOfLearnedClauses = 0
 
-    //delete all learned Constraints
-    constraints = constraints.filterNot(_.removable)
-
-    //reset all variables
-    variables.clear()
-    constraints.map { c =>
-      c.terms.map { t =>
-        val v = t.l.v
-        v.state = State.OPEN
-        v.watched = ListBuffer[Constraint]()
-        v.level = -1
-        v.reason = null
-        v.activity = 0.0
-        variables.update(t.l.v.ID, v)
-      }
+    //reset the variables but don't change the state of the variable
+    variables.values.map { v =>
+      v.watched = ListBuffer[Constraint]()
+      v.level = -1
+      v.reason = null
+      v.activity = 0.0
     }
 
-    units.clear()
-    //reset all constraints and init the watched literals
+    //reset the constraints
     constraints.map { c =>
       c match {
         case cardinality: PBLCardinalityConstraint => {
@@ -131,7 +135,6 @@ class CDCLLike extends DecisionProcedure {
         }
       }
     }
-    initConstraints
   }
 
   /**
@@ -205,7 +208,9 @@ class CDCLLike extends DecisionProcedure {
     }
     learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
     //add the learned clause to the instance
-    constraints +:= learnedClause
+    constraints :+= learnedClause
+    //update learned clause counter
+    numberOfLearnedClauses += 1
     //update the units
     units = mutable.HashSet[Constraint](learnedClause)
     //if learnedClause has only one literal
@@ -291,6 +296,15 @@ class CDCLLike extends DecisionProcedure {
       //TODO treat pseudo-boolean constraints
       case _ => c
     }
+  }
+
+  private def deleteConstraints(n: Int) {
+    val splittedConstraints = constraints.splitAt(constraints.size - n)
+    constraints = splittedConstraints._1
+    //remove the learned constraints of watchedList of the variables
+    splittedConstraints._2.map(c =>
+      c.terms.map(t => t.l.v.watched -= c)
+    )
   }
 }
 
