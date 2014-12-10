@@ -138,6 +138,19 @@ class CDCLLike extends DecisionProcedure {
   }
 
   /**
+   * Method resets the solver to the initial state
+   */
+  def reset() {
+    variables.clear()
+    constraints = List[Constraint]()
+    level = 0
+    stack.clear()
+    units.clear()
+    lastState = Solver.UNKNOWN
+    numberOfLearnedClauses = 0
+  }
+
+  /**
    * Method computes the occurrences of the variables of the given instance
    * @param instance
    * @return the occurrences of the variables
