@@ -319,5 +319,15 @@ class CDCLLike extends DecisionProcedure {
       c.terms.map(t => t.l.v.watched -= c)
     )
   }
+
+  private def deleteConstraintsAndUpdateVariables(n: Int) {
+    //compute all variables of deleted constraints
+    val vars: List[PBLVariable] = constraints.splitAt(constraints.size - n)._2.map(_.terms.map(_.l.v)).flatten.distinct
+    deleteConstraints(n)
+    //compute all variables of the new constraints
+    val varsOfConstraints: List[PBLVariable] = constraints.map(_.terms.map(_.l.v)).flatten.distinct
+    //delete all variables which occur only at the deleted constraints
+    (vars diff varsOfConstraints).map(variables -= _.ID)
+  }
 }
 
