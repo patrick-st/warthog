@@ -72,7 +72,6 @@ class LinearOptimiserTest extends Specification {
       val linearOptimiser = new LinearOptimiser(new CDCLLike)
       linearOptimiser.add(instance._1)
       linearOptimiser.solve(instance._2.get)
-      linearOptimiser.reset()
       linearOptimiser.solve(C.f08_objectiveFunction) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
