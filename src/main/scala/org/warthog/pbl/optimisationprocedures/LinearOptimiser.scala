@@ -18,6 +18,8 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
   var minOptimum: BigInt = null
   // the optimum computed by the maximisation function
   var maxOptimum: BigInt = null
+  //model of the computed minimum
+  var model: Option[Model] = None
 
   def add(c: Constraint) = solver.add(c)
 
@@ -27,6 +29,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     maximizeFunction = null
     minOptimum = null
     maxOptimum = null
+    model = None
   }
 
   /**
@@ -64,6 +67,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     solver.undo()
 
     minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
+    this.model = Some(model)
 
     //return the optimum
     if (minOptimum == null) {
@@ -72,6 +76,8 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
       Some(minOptimum)
     }
   }
+
+  def getModel() = model
 
   private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
    val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||

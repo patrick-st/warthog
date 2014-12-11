@@ -18,6 +18,8 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
   var minOptimum: BigInt = null
   // the optimum computed by the maximisation function
   var maxOptimum: BigInt = null
+  //model of the computed minimum
+  var model: Option[Model] = None
 
   def add(c: Constraint) = solver.add(c)
 
@@ -27,6 +29,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     maximizeFunction = null
     minOptimum = null
     maxOptimum = null
+    model = None
   }
 
   def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
@@ -79,6 +82,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     solver.undo()
 
     minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
+    this.model = Some(model)
 
     //return the optimum
     if (minOptimum == null) {
@@ -103,6 +107,8 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
       new PBLConstraint(terms, -degree)
     }
   }
+
+  def getModel() = model
 
   private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
     val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
