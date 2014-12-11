@@ -11,18 +11,13 @@ import scala.collection.mutable
 trait DecisionProcedure {
 
   /**
-   * The variables of the instance to solve
-   */
-
-
-  /**
    * Add a constraint which has to be solved
    * @param c the constraint
    */
   def add(c: Constraint)
 
   /**
-   * Add a several constraints which have to be solved
+   * Add several constraints which have to be solved
    * @param constraints the constraints
    */
   def add(constraints: List[Constraint]): Unit = constraints.map(add(_))
@@ -36,12 +31,25 @@ trait DecisionProcedure {
 
   /**
    * Reset the solver to initial state.
-   * The constraints, added by the add-functions, aren't removed
    */
   def reset()
 
+  /**
+   * Mark a solver's internal stack position.  Executing
+   * {{{
+   * Solver.add(f0)
+   * Solver.mark()
+   * Solver.add(a1)
+   * Solver.add(a2)
+   * Solver.undo()
+   * }}}
+   * will set the solver back into the state after adding `f0`
+   */
   def mark()
 
+  /**
+   * Undo all the additions until the last marked position.
+   */
   def undo()
 
   def getModel(): Option[Model]
