@@ -1,6 +1,7 @@
 package org.warthog.pbl.decisionprocedures
 
 import org.warthog.pbl.datastructures.{PBLVariable, Constraint}
+import org.warthog.pl.decisionprocedures.satsolver.Model
 
 import scala.collection.mutable
 
@@ -38,5 +39,11 @@ trait DecisionProcedure {
    * The constraints, added by the add-functions, aren't removed
    */
   def reset()
+
+  def mark()
+
+  def undo()
+
+  def getModel(): Option[Model]
 }
 
