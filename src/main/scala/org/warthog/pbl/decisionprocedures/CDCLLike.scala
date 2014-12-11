@@ -3,7 +3,8 @@ package org.warthog.pbl.decisionprocedures
 import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.pbl.datastructures._
 import org.warthog.pbl.parsers.PBCompetitionReader
-import org.warthog.pl.decisionprocedures.satsolver.Solver
+import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.formulas.PLAtom
 import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -16,6 +17,7 @@ class CDCLLike extends DecisionProcedure {
   var level = 0
   var stack = mutable.Stack[PBLVariable]()
   var units = mutable.HashSet[Constraint]()
+  var marks: List[Int] = Nil
   var lastState = Solver.UNKNOWN
   var numberOfLearnedClauses = 0
 
@@ -39,14 +41,59 @@ class CDCLLike extends DecisionProcedure {
   def solve(constraints: List[Constraint]): Int = {
     if (!constraints.isEmpty)
       add(constraints)
+
     //solve only if solver state is unknown
     if (lastState == Solver.UNKNOWN) {
       unassignVariables
       initConstraints
-      solve
+      if (lastState == Solver.UNKNOWN) {
+        solve
+      }
+      cleanUp
     }
-    cleanUp
     lastState
+  }
+
+  /**
+   * Method resets the solver to the initial state
+   */
+  def reset() {
+    variables.clear()
+    constraints = List[Constraint]()
+    level = 0
+    stack.clear()
+    units.clear()
+    lastState = Solver.UNKNOWN
+    numberOfLearnedClauses = 0
+  }
+
+  def mark() {
+    marks = constraints.length :: marks
+  }
+
+  def undo() {
+    marks match {
+      case h :: t => {
+        marks = t
+        lastState = Solver.UNKNOWN
+        deleteConstraintsAndUpdateVariables(constraints.length - h)
+      }
+      case _ =>
+    }
+  }
+
+  def getModel() = {
+    require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
+
+    lastState match {
+      case Solver.UNSAT => None
+      case Solver.SAT => {
+        val partition = variables.values.partition(_.state == State.TRUE)
+        val pos = partition._1.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+        val neg = partition._2.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+        Some(Model(pos, neg))
+      }
+    }
   }
 
   /**
@@ -112,8 +159,10 @@ class CDCLLike extends DecisionProcedure {
     stack.clear()
     units.clear()
     //delete all learned constraints
-    deleteConstraints(numberOfLearnedClauses)
-    numberOfLearnedClauses = 0
+    if (numberOfLearnedClauses > 0) {
+      deleteConstraints(numberOfLearnedClauses)
+      numberOfLearnedClauses = 0
+    }
 
     //reset the variables but don't change the state of the variable
     variables.values.map { v =>
@@ -135,19 +184,6 @@ class CDCLLike extends DecisionProcedure {
         }
       }
     }
-  }
-
-  /**
-   * Method resets the solver to the initial state
-   */
-  def reset() {
-    variables.clear()
-    constraints = List[Constraint]()
-    level = 0
-    stack.clear()
-    units.clear()
-    lastState = Solver.UNKNOWN
-    numberOfLearnedClauses = 0
   }
 
   /**
