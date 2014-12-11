@@ -25,7 +25,7 @@ trait DecisionProcedure {
   /**
    * Solve the added and additional given constraints
    * @param constraints additional constraints to solve
-   * @return true if all constraints are satisfiable else false
+   * @return the constants Solver.SAT, Solver.UNSAT or Solver.UNKNOWN
    */
   def solve(constraints: List[Constraint]): Int
 
