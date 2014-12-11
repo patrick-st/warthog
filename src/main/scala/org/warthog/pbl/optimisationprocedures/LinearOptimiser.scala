@@ -33,7 +33,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
    * Main entry point for optimizing the added constraints by linear search
    * the objective function will be minimized
    */
-  def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
+  def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
 
     minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
 

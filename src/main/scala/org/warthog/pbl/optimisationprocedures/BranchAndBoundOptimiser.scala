@@ -39,7 +39,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     normalizedFunction = null
   }
 
-  def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
+  def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
     //exchange variables of objective function
     objectiveFunction.map { t =>
       t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)

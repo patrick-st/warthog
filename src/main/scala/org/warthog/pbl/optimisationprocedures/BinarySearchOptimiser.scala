@@ -29,7 +29,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     maxOptimum = null
   }
 
-  def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
+  def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
     //compute the minimize and maximize functions
     minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     //compute the maximization function

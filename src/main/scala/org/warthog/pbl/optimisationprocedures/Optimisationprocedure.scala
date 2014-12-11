@@ -30,7 +30,7 @@ trait OptimisationProcedure {
    * @param objectiveFunction to minimize
    * @return None if the instance is unsat else the optimum
    */
-  def solve(objectiveFunction: List[PBLTerm]): Option[BigInt]
+  def min(objectiveFunction: List[PBLTerm]): Option[BigInt]
 
   /**
    * Reset the optimiser to initial state
