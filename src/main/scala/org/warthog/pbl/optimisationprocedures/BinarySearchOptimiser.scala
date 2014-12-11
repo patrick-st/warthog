@@ -2,6 +2,8 @@ package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures.{PBLConstraint, PBLCardinalityConstraint, Constraint, PBLTerm}
 import org.warthog.pbl.decisionprocedures.{CDCLLike, DecisionProcedure}
+import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.formulas.PLAtom
 
 /**
  * Implementation of an optimiser, which uses binary search to compute the optimum
@@ -28,11 +30,6 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
   }
 
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
-    //exchange variables
-    objectiveFunction.map { t =>
-      t.l.v = solver.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
-    }
-
     //compute the minimize and maximize functions
     minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     //compute the maximization function
@@ -58,11 +55,13 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     //enforce objectiveFunction <= upper
     var upperBoundConstraint = computeUpperBoundConstraint(upper)
 
+    var model: Model = null
     while (lower <= upper) {
-      if (solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint))) {
-        //update max and minOptimum
-        maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-        minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
+      solver.mark()
+      if (solver.solve(List[Constraint](lowerBoundConstraint,upperBoundConstraint)) == Solver.SAT) {
+        //update maxOptimum
+        model = solver.getModel().get
+        maxOptimum = evaluateObjectiveFunction(maximizeFunction.terms, model)
         //update the new lower bound
         lower = maxOptimum + 1
       } else {
@@ -74,8 +73,12 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
       lowerBoundConstraint = maximizeFunction.copy
       lowerBoundConstraint.degree = middle
       upperBoundConstraint = computeUpperBoundConstraint(upper)
-      solver.reset()
+      solver.undo()
+      solver.mark()
     }
+    solver.undo()
+
+    minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
 
     //return the optimum
     if (minOptimum == null) {
@@ -99,5 +102,11 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     } else {
       new PBLConstraint(terms, -degree)
     }
+  }
+
+  private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
+    val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
+      !t.l.phase && model.negativeVariables.contains(PLAtom(t.l.v.name)))
+    filter.map(_.a).sum
   }
 }
