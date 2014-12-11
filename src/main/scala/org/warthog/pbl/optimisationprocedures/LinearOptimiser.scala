@@ -2,6 +2,8 @@ package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures.{PBLConstraint, PBLCardinalityConstraint, Constraint, PBLTerm}
 import org.warthog.pbl.decisionprocedures.{DecisionProcedure, CDCLLike}
+import org.warthog.pl.decisionprocedures.satsolver.{Solver, Model}
+import org.warthog.pl.formulas.PLAtom
 
 /**
  * Implementation of an optimiser, which uses linear search to compute the optimum
@@ -31,10 +33,6 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
    * Main entry point for optimizing the given instance by linear search
    */
   def solve(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
-    //exchange variables
-    objectiveFunction.map { t =>
-      t.l.v = solver.variables.getOrElseUpdate(t.l.v.ID, t.l.v)
-    }
 
     minimizeFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy)
 
@@ -50,16 +48,21 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
       maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
     }
 
+    solver.mark()
+    var model: Model = null
     //start to optimize
-    while (solver.solve(List[Constraint](maximizeFunction.copy))) {
-      //compute the max and min optimum
-      maxOptimum = maximizeFunction.terms.filter(_.l.evaluates2True).map(_.a).sum
-      minOptimum = minimizeFunction.filter(_.l.evaluates2True).map(_.a).sum
+    while (solver.solve(List[Constraint](maximizeFunction.copy)) == Solver.SAT) {
+      //compute the max optimum
+      model = solver.getModel().get
+      maxOptimum = evaluateObjectiveFunction(maximizeFunction.terms, model)
       //update the objective function
       maximizeFunction.degree = maxOptimum + 1
-      //reset the solver
-      solver.reset()
+      solver.undo()
+      solver.mark()
     }
+    solver.undo()
+
+    minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
 
     //return the optimum
     if (minOptimum == null) {
@@ -67,5 +70,11 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     } else {
       Some(minOptimum)
     }
+  }
+
+  private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
+   val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
+      !t.l.phase && model.negativeVariables.contains(PLAtom(t.l.v.name)))
+    filter.map(_.a).sum
   }
 }
