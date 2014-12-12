@@ -1,16 +1,19 @@
 package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures._
+import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.formulas.PLAtom
 
 import scala.collection.mutable
+import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 
 /**
  * Implementation of a branch and bound optimisation approach
  */
 class BranchAndBoundOptimiser extends OptimisationProcedure {
 
-  var instance: List[Constraint] = List[Constraint]()
-  var optimum: BigInt = null
+  var constraints: List[Constraint] = List[Constraint]()
+  var minOptimum: BigInt = null
   var objectiveFunction: List[PBLTerm] = null
   var normalizedFunction: List[PBLTerm] = null
   var level = 0
@@ -25,49 +28,80 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
     }
 
-    c.initWatchedLiterals match {
-      case ConstraintState.UNIT => units += c; instance ::= c
-      case ConstraintState.EMPTY => containsEmptyConstraint = true; instance ::= c
-      case _ => instance ::= c
-    }
+    constraints :+= c
+    minOptimum = null
   }
 
   def reset() {
-    backtrack(0)
-    optimum = null
+    constraints = List[Constraint]()
+    minOptimum = null
     objectiveFunction = null
     normalizedFunction = null
+    level = 0
+    stack.clear()
+    variables.clear()
+    units.clear()
+    containsEmptyConstraint = false
   }
 
   def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
-    //exchange variables of objective function
-    objectiveFunction.map { t =>
-      t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
-    }
+    //check if optimum was already computed
+    if (minOptimum == null) {
 
-    //check if the instance contains an empty constraint
-    if (this.containsEmptyConstraint)
-      return None
+      unassignVariables
+      initConstraints()
 
-    //set the minimization function
-    this.objectiveFunction = objectiveFunction
-    //normalize the objective function
-    normalizedFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy).map { t =>
-      if (t.a < 0) {
-        t.a = t.a.abs
-        t.l = t.l.negate
+      //exchange variables of objective function
+      objectiveFunction.map { t =>
+        t.l.v = variables.getOrElseUpdate(t.l.v.ID, t.l.v)
       }
-      t
+
+      //check if the instance contains an empty constraint
+      if (this.containsEmptyConstraint) {
+        println("None because of empty constraint")
+        return None
+      }
+      else {
+        //set the minimization function
+        this.objectiveFunction = objectiveFunction
+        //normalize the objective function
+        normalizedFunction = objectiveFunction.foldLeft(List[PBLTerm]())(_ :+ _.copy).map { t =>
+          if (t.a < 0) {
+            t.a = t.a.abs
+            t.l = t.l.negate
+          }
+          t
+        }
+
+        //set initial upper bound to the maximum of the objective function
+        val ub = normalizedFunction.filter(_.a > 0).map(_.a).sum + 1
+        println("start to solve")
+        solve(ub)
+        println("end solving")
+        println("min: " + minOptimum)
+        //check if an optimum was found
+      }
+      cleanUp
     }
 
-    //set initial upper bound to the maximum of the objective function
-    val ub = normalizedFunction.filter(_.a > 0).map(_.a).sum + 1
-    solve(ub)
-    //check if an optimum was found
-    if (optimum == null)
+    if (minOptimum == null) {
+      println("None because of opt = null")
       None
+    }
     else
-      Some(optimum)
+      Some(minOptimum)
+  }
+
+  def getModel() = {
+    minOptimum match {
+      case null => None
+      case opt => {
+        val partition = variables.values.partition(_.state == State.TRUE)
+        val pos = partition._1.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+        val neg = partition._2.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+        Some(Model(pos, neg))
+      }
+    }
   }
 
   private def solve(currentUB: BigInt): Option[BigInt] = {
@@ -81,14 +115,15 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       case None => {
         //lb = current value of objective function
         val lb = normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + maximalIndependentSet
+        println("lb: " + lb)
 
         if (lb >= currentUB) {
-          Some(currentUB)
+          return Some(currentUB)
         }
         //chose next variable
         getNextVar match {
           case None => {
-            optimum = objectiveFunction.filter(_.l.evaluates2True).map(_.a).sum
+            minOptimum = objectiveFunction.filter(_.l.evaluates2True).map(_.a).sum
             return Some(normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum)
           }
           case Some(v) => {
@@ -108,6 +143,33 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
             stack.push(v)
             Some(newUB.min(solve(newUB).get))
           }
+        }
+      }
+    }
+  }
+
+  private def cleanUp {
+    level = 0
+    stack.clear()
+    units.clear()
+
+    //reset the variables but don't change the state of the variable
+    variables.values.map { v =>
+      v.watched = ListBuffer[Constraint]()
+      v.level = -1
+      v.reason = null
+      v.activity = 0.0
+    }
+
+    //reset the constraints
+    constraints.map { c =>
+      c match {
+        case cardinality: PBLCardinalityConstraint => {
+          cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
+        }
+        case constraint: PBLConstraint => {
+          constraint.currentSum = 0
+          constraint.slack = 0
         }
       }
     }
@@ -163,7 +225,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     * The problem is if you want to learn PBLConstraints you need the slack under the current assignment.
     * Updating the slack while computing the learned clause would lead to problems (in my opinion)
     */
-    instance.map { c =>
+    constraints.map { c =>
       if (c.isInstanceOf[PBLConstraint]) {
         //update slack and currentSum
         c.asInstanceOf[PBLConstraint].updateSlack
@@ -172,12 +234,12 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     }
   }
 
-  def maximalIndependentSet: BigInt = {
+  private def maximalIndependentSet: BigInt = {
     var independentSet = Set[PBLVariable]()
     //collect all variables of the objective function
     val varsObjective = objectiveFunction.foldLeft(Set[PBLVariable]())(_ + _.l.v)
     var cost: BigInt = 0
-    instance.foreach { c =>
+    constraints.foreach { c =>
       //check if constraint is already sat
       val isSat = c.terms.filter(_.l.evaluates2True).map(_.a).sum >= c.degree
       if (!isSat) {
@@ -191,7 +253,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     cost
   }
 
-  def minimalCost(c: Constraint, varsObjective: Set[PBLVariable]): BigInt = {
+  private def minimalCost(c: Constraint, varsObjective: Set[PBLVariable]): BigInt = {
     var terms = normalizedFunction.foldLeft(mutable.HashMap[Int, BigInt]()) { (map, t) => map += t.l.v.ID -> t.a}
     //determine degree of corresponding cardinality constraint
     var degree_ = c.degree
@@ -215,5 +277,19 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       cost += terms(minCostVariables(i).l.v.ID)
     }
     cost
+  }
+
+  private def initConstraints() {
+    constraints.map(c =>
+      c.initWatchedLiterals match {
+        case ConstraintState.UNIT => units += c;
+        case ConstraintState.EMPTY => containsEmptyConstraint = true
+        case _ =>
+      }
+    )
+  }
+
+  private def unassignVariables {
+    variables.values.map(_.unassign())
   }
 }
