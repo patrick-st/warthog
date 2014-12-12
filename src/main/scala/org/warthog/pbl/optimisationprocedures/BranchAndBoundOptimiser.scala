@@ -57,10 +57,8 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       }
 
       //check if the instance contains an empty constraint
-      if (this.containsEmptyConstraint) {
-        println("None because of empty constraint")
+      if (this.containsEmptyConstraint)
         return None
-      }
       else {
         //set the minimization function
         this.objectiveFunction = objectiveFunction
@@ -75,19 +73,13 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
 
         //set initial upper bound to the maximum of the objective function
         val ub = normalizedFunction.filter(_.a > 0).map(_.a).sum + 1
-        println("start to solve")
         solve(ub)
-        println("end solving")
-        println("min: " + minOptimum)
-        //check if an optimum was found
       }
       cleanUp
     }
-
-    if (minOptimum == null) {
-      println("None because of opt = null")
+    //check if an optimum was found
+    if (minOptimum == null)
       None
-    }
     else
       Some(minOptimum)
   }
@@ -115,7 +107,6 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       case None => {
         //lb = current value of objective function
         val lb = normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + maximalIndependentSet
-        println("lb: " + lb)
 
         if (lb >= currentUB) {
           return Some(currentUB)
