@@ -71,6 +71,7 @@ class BranchAndBoundOptimiserTest extends Specification{
       optimiser.add(instance._1)
       optimiser.min(instance._2.get)
       optimiser.reset()
+      optimiser.add(instance._1)
       optimiser.min(C.f08_objectiveFunction) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
