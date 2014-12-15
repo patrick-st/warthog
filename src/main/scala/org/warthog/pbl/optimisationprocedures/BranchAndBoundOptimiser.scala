@@ -21,6 +21,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
   var variables = mutable.HashMap[Int, PBLVariable]()
   var units = mutable.HashSet[Constraint]()
   var containsEmptyConstraint = false
+  var model: Option[Model] = None
 
   def add(c: Constraint) {
     //exchange variables if necessary
@@ -42,6 +43,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     variables.clear()
     units.clear()
     containsEmptyConstraint = false
+    model = None
   }
 
   def min(objectiveFunction: List[PBLTerm]): Option[BigInt] = {
@@ -84,17 +86,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       Some(minOptimum)
   }
 
-  def getModel() = {
-    minOptimum match {
-      case null => None
-      case opt => {
-        val partition = variables.values.partition(_.state == State.TRUE)
-        val pos = partition._1.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
-        val neg = partition._2.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
-        Some(Model(pos, neg))
-      }
-    }
-  }
+  def getModel() = model
 
   private def solve(currentUB: BigInt): Option[BigInt] = {
     unitPropagation match {
@@ -113,8 +105,10 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
         }
         //chose next variable
         getNextVar match {
+          //new optimum found
           case None => {
             minOptimum = objectiveFunction.filter(_.l.evaluates2True).map(_.a).sum
+            model = computeModel()
             return Some(normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum)
           }
           case Some(v) => {
@@ -282,5 +276,12 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
 
   private def unassignVariables {
     variables.values.map(_.unassign())
+  }
+
+  private def computeModel() = {
+    val partition = variables.values.partition(_.state == State.TRUE)
+    val pos = partition._1.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+    val neg = partition._2.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
+    Some(Model(pos, neg))
   }
 }
