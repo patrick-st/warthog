@@ -66,6 +66,17 @@ abstract class Constraint() {
   }
 
   /**
+   * Reduce the all coefficients which are greater than the degree
+   */
+  def reduce() {
+    terms.map(t =>
+     if(t.a > degree){
+       t.a = degree
+     }
+    )
+  }
+
+  /**
    * Returns a copy of the constraint
    * @return the copied constraint
    */
