@@ -90,19 +90,51 @@ object LearnUtil {
   }
 
   /**
-   * Computes the resolvent of two given clauses
-   * Note: Currently only applicable for clauses
-   * Maybe the method can be adapted for pseudo-boolean constraints.
-   * Else a new resolve method has to be implemented for pb constraints.
-   * @param c1 first clause
-   * @param c2 second clause
+   * Computes the resolvent of two given constraints
+   * @param c1 first constraint
+   * @param c2 second constraint
    * @param v the variable to resolve
    * @return the resolvent
    */
   private def resolve(c1: Constraint, c2: Constraint, v: PBLVariable) = {
     if (isResolvable(c1, c2, v)) {
-      val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
-      new PBLCardinalityConstraint(newTerms, 1, true)
+      val a1 = c1.terms.find(_.l.v == v).get.a
+      val a2 = c2.terms.find(_.l.v == v).get.a
+      val lcd = (a1 * a2) / a1.gcd(a2)
+      val coeff1 = lcd / a1
+      val coeff2 = lcd / a2
+      //multiply the constraints with the coefficients
+      val c1_ = c1.copy
+      c1_ * coeff1
+      val c2_ = c2.copy
+      c2_ * coeff2
+      for (t <- c2_.terms) {
+        c1_.terms.find(_.l.v == t.l.v) match {
+          case Some(term) => {
+            if (term.l.phase == t.l.phase) {
+              term.a += t.a
+            } else {
+              c2_.degree -= t.a
+              term.a -= t.a
+              if (term.a == 0) {
+                //delete the term
+                c1_.terms = c1_.terms.filter(_.l.v != t.l.v)
+              }
+            }
+          }
+          case None => c1_.terms :+= t
+        }
+      }
+      //check if constraint is cardinality or not
+      if (c1_.terms.forall(_.a.abs == c1_.terms(0).a.abs))
+        new PBLCardinalityConstraint(c1_.terms, c1_.degree + c2_.degree)
+      else {
+        var c: Constraint = new PBLConstraint(c1_.terms, c1_.degree + c2_.degree)
+        c.reduce()
+        if(c.terms.forall(_.a.abs == c.terms(0).a.abs))
+          c = new PBLCardinalityConstraint(c.terms, c.degree)
+        c
+      }
     } else {
       c1
     }
