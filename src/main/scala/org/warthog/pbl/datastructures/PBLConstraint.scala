@@ -93,7 +93,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * Checks if the constraint is empty, unit or sat
    * @return
    */
-  private def getCurrentState: ConstraintState.Value = {
+  def getCurrentState: ConstraintState.Value = {
     if (slack < 0)
       return ConstraintState.EMPTY
     if (currentSum >= degree)

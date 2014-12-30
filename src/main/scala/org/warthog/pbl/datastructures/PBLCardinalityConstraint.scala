@@ -103,6 +103,18 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
     }
   }
 
+  def getCurrentState(): ConstraintState = {
+    if(isSat){
+      ConstraintState.SAT
+    } else if (watchedLiterals.count(t => t.l.evaluates2True || t.l.v.state == State.OPEN) < degree){
+      ConstraintState.EMPTY
+    } else if(isUnit){
+      ConstraintState.UNIT
+    } else {
+      ConstraintState.SUCCESS
+    }
+  }
+
   /**
    * Search for a new term with a literal which can be watched
    * @return None if no literal can be found else Some(PBLTerm)
