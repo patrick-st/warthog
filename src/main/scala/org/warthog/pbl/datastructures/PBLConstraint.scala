@@ -29,7 +29,8 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    *         the watched literals are successfully initialized
    */
   def initWatchedLiterals() = {
-    slack = terms.map(_.a).sum - degree
+    slack = terms.filter(! _.l.evaluates2False).map(_.a).sum - degree
+    currentSum = terms.filter(_.l.evaluates2True).map(_.a).sum
     //add the clause to watched lists of all variables
     terms.map(_.l.v.add(this))
     getCurrentState
@@ -40,7 +41,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return true if constraint is unit else false
    */
   def isUnit(): Boolean = {
-    if (currentSum >= degree)
+    if (currentSum >= degree || slack < 0)
       false
     else {
       for (t <- terms) {
@@ -77,12 +78,15 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    terms.foldLeft(List[PBLLiteral]()) { (list, term) =>
-      if (term.l.v.state == State.OPEN && term.a > slack)
-        list :+ term.l
-      else
-        list
-    }
+    if(this.isUnit()) {
+      terms.foldLeft(List[PBLLiteral]()) { (list, term) =>
+        if (term.l.v.state == State.OPEN && term.a > slack)
+          list :+ term.l
+        else
+          list
+      }
+    } else
+      Nil
   }
 
   /**
