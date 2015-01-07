@@ -95,12 +95,16 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    watchedLiterals.foldLeft(List[PBLLiteral]()) { (list, term) =>
-      if (term.l.v.state == State.OPEN)
-        list :+ term.l
-      else
-        list
+    if(isUnit()) {
+      watchedLiterals.foldLeft(List[PBLLiteral]()) { (list, term) =>
+        if (term.l.v.state == State.OPEN)
+          list :+ term.l
+        else
+          list
+      }
     }
+    else
+      Nil
   }
 
   def getCurrentState(): ConstraintState = {
