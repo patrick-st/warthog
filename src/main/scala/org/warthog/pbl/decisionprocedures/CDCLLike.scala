@@ -107,12 +107,10 @@ class CDCLLike extends DecisionProcedure {
         case Some(c) => {
           //conflict occurred => conflict has to be analyzed
           val backtrackLevel = analyzeConflict(c)
-          if (backtrackLevel == -1) {
+          if (backtrackLevel == Solver.UNSAT) {
             lastState = Solver.UNSAT
             return
           }
-          //backtracking to the computed level
-          backtrack(backtrackLevel)
         }
         case None => {
           //non conflict occurred => assign a new chosen variable
@@ -136,7 +134,7 @@ class CDCLLike extends DecisionProcedure {
 
   def printVariables {
     variables.values.toList.sortBy(_.ID).map { v =>
-      println(v.ID + ": " + v.state)
+      println(v)
     }
   }
 
@@ -242,30 +240,53 @@ class CDCLLike extends DecisionProcedure {
    */
   private def analyzeConflict(emptyClause: Constraint): Int = {
     var backtrackLevel = -1
-    if (level == 0)
-      return -1
-    //compute the clause to learn
-    var learnedClause = LearnUtil.learnClause(emptyClause, stack, level)
-    //update activity
-    learnedClause.terms.map(_.l.v.activity += 1)
-    //compute backtracking level
-    for (t <- learnedClause.terms) {
-      val level: Int = t.l.v.level
-      if (level != this.level && level > backtrackLevel) {
-        backtrackLevel = level
+    //conflict at level 0 => unsat
+    if (level == 0) {
+      backtrackLevel = -1
+      Solver.UNSAT
+    } else {
+      //compute the clause to learn
+      var learnedClause = LearnUtil.learnPBConstraint(emptyClause, stack, level)
+      //update activity
+      learnedClause.terms.map(_.l.v.activity += 1)
+      //compute backtracking level
+      for (t <- learnedClause.terms) {
+        val level: Int = t.l.v.level
+        if (level != this.level && level > backtrackLevel) {
+          backtrackLevel = level
+        }
       }
+      learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
+      //add the learned clause to the instance
+      constraints :+= learnedClause
+      //update learned clause counter
+      numberOfLearnedClauses += 1
+      //update the units
+      units = mutable.HashSet[Constraint](learnedClause)
+      //check if learned clause is initial unit
+      learnedClause match {
+        case cardinality: PBLCardinalityConstraint => {
+          if(cardinality.terms.size == cardinality.degree)
+            backtrackLevel = 0
+        }
+        case constraint: PBLConstraint => {
+          val initialSlack = constraint.terms.map(_.a).sum - constraint.degree
+          if(initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
+            backtrackLevel = 0
+        }
+      }
+
+      backtrack(backtrackLevel)
+      if(learnedClause.getCurrentState() == ConstraintState.EMPTY){
+        if(backtrackLevel != 0) {
+          backtrack(0)
+        }
+        else {
+          return Solver.UNSAT
+        }
+      }
+      Solver.UNKNOWN
     }
-    learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
-    //add the learned clause to the instance
-    constraints :+= learnedClause
-    //update learned clause counter
-    numberOfLearnedClauses += 1
-    //update the units
-    units = mutable.HashSet[Constraint](learnedClause)
-    //if learnedClause has only one literal
-    if (learnedClause.terms.size == 1)
-      return 0
-    backtrackLevel
   }
 
   /**
