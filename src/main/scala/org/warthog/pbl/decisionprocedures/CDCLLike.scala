@@ -353,10 +353,20 @@ class CDCLLike extends DecisionProcedure {
             }
           }
           //set the rest of the literals
-          for (t <- cardinality.terms) {
-            if (watched.size != cardinality.degree.+(1) && !watched.contains(t) && t.l.v.level == backtrackLevel) {
-              watched += t
-              t.l.v.add(cardinality)
+          //case clause
+          if(cardinality.degree == 1){
+            val t = cardinality.terms.find(_.l.v.level == backtrackLevel).get
+            watched += t
+            t.l.v.add(cardinality)
+            //case cardinality
+          } else {
+            var terms = cardinality.terms.sortBy(_.l.v.level).toList.reverse
+            while(watched.size != cardinality.degree.+(1).toInt) {
+              if(!watched.contains(terms.head)) {
+                watched += terms.head
+                terms.head.l.v.add(cardinality)
+              }
+              terms = terms.tail
             }
           }
         }
@@ -364,7 +374,7 @@ class CDCLLike extends DecisionProcedure {
         cardinality
       }
       //TODO treat pseudo-boolean constraints
-      case _ => c
+      case c: PBLConstraint => c.initWatchedLiterals(); c
     }
   }
 
