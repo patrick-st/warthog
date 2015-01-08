@@ -15,17 +15,16 @@ object LearnUtil {
   }
 
   /**
-   * Generic function to provide three different learn methods
-   * 1. clause learning
-   * 2. pseudo-boolean constraint learning
-   * 3. cardinality constraint learning
+   * Generic function to provide 2 different learn methods
+   * 1. pseudo-boolean constraint learning
+   * 2. cardinality constraint learning
    * For more informations see: Donald Chai, Andreas Kuehlmann: A Fast Pseudo-Boolean Constraint Solver
    * @param reduce
    * @param resolve
    * @param conflict the conflict
    * @param stack the assigned variables and their reasons
    * @param level the current level
-   * @return the new clause to learn
+   * @return the new constraint to learn
    */
   private def learn(reduce: (Constraint,Constraint, PBLVariable) => Constraint,
                     resolve: (Constraint, Constraint, PBLVariable) => Constraint,
@@ -36,6 +35,7 @@ object LearnUtil {
     //resolve the conflict until the resolvent is 1UIP
     while (!stack.isEmpty) {
       val v = stack.pop()
+      //if no resolve step is possible return the computed constraint
       if(v.reason == null || stack.isEmpty) {
         v.unassign()
         return c1
@@ -55,10 +55,7 @@ object LearnUtil {
 
 
   /**
-   * Generic function to provide three different learn methods
-   * 1. clause learning
-   * 2. pseudo-boolean constraint learning
-   * 3. cardinality constraint learning
+   * Method computes a clause which can be learned
    * For more informations see: Donald Chai, Andreas Kuehlmann: A Fast Pseudo-Boolean Constraint Solver
    * @param conflict the conflict
    * @param stack the assigned variables and their reasons
@@ -106,25 +103,41 @@ object LearnUtil {
     }
   }
 
+  /**
+   * Method guarantees that the resolved constraint will be unsatisfied under the current assignment.
+   * The resolved constraint has to be empty during all resolve steps.
+   * If c2 is oversatisfied (slack > 0) then the resolvent can be unit or sat.
+   * This has to be prevented because the resolvent wouldn't be in conflict to the current variable assignment.
+   * So the method reduces the constraint c2 (and thus it's slack) until the resulting resolvent will be empty.
+   * For more information see: Hossein M. Sheini and Karem A. Sakallah: Pueblo: A Hybrid Pseudo-Boolean SAT Solver
+   * @param c1 the current resolved constraint
+   * @param c2 will be resolved with c1
+   * @param v the variable to resolve over
+   * @return the reduced constraint c2
+   */
   private def reduce(c1: Constraint, c2: Constraint, v: PBLVariable): Constraint = {
     val c1_ = c1.copy
     val c2_ = c2.copy
-    var slack1 = c1_.getSlack()
+    val slack1 = c1_.getSlack()
     var slack2 = c2_.getSlack()
+    //get the scalars which are necessary to eliminate the variable v
     var coeffPair = computeScalar(c1_,c2_,v)
     var coeff1 = coeffPair._1
     var coeff2 = coeffPair._2
+    //reduce c2_ until the resolvent will be empty
     while(slack1*coeff1 + slack2*coeff2 >= 0){
-      //the resolved constraints would lead a constraint which is not in conflict to the current variable assignment
-      val terms = c2_.terms.filter(t => (t.l.evaluates2True || t.l.v.state == State.OPEN) && t.l.v != v)
-      if(terms.isEmpty)
+      //only positive of open terms can be removed
+      val removableTerms = c2_.terms.filter(t => (t.l.evaluates2True || t.l.v.state == State.OPEN) && t.l.v != v)
+      //if no removable term exists, reduce the constraint to a clause
+      if(removableTerms.isEmpty)
         return reduce2Clause(c2,v)
-      val term2remove = terms.minBy(_.a)
+      val term2remove = removableTerms.minBy(_.a)
       //remove the term and update the degree
       c2_.terms = c2_.terms.filter(_ != term2remove)
       c2_.degree -= term2remove.a
       //saturation step
       c2_.reduce()
+      //if a tautology arises, reduce the constraint to a clause
       if(c2_.degree <= 0)
         return reduce2Clause(c2,v)
       //update the slacks and the coefficients
@@ -158,6 +171,7 @@ object LearnUtil {
    * @return the resolvent
    */
   private def resolve(c1: Constraint, c2: Constraint, v: PBLVariable) = {
+    //compute the scalars to eliminate the variable v
     val coeffPair = computeScalar(c1, c2, v)
     val coeff1 = coeffPair._1
     val coeff2 = coeffPair._2
@@ -166,12 +180,16 @@ object LearnUtil {
     c1_ * coeff1
     val c2_ = c2.copy
     c2_ * coeff2
+    //add all terms with equal variables accordingly
     for (t <- c2_.terms) {
       c1_.terms.find(_.l.v == t.l.v) match {
         case Some(term) => {
           if (term.l.phase == t.l.phase) {
+            //5 x1 + 2 x1 = 8 x1
             term.a += t.a
           } else {
+            //5 x1 + 2 ~x1 = 5 x1 - 2 x1 = 3 x1
+            // note: 2 ~x1 can be only transformed to -2 x1 by updating the degree accordingly
             c2_.degree -= t.a
             term.a -= t.a
             if (term.a == 0) {
@@ -195,6 +213,14 @@ object LearnUtil {
     }
   }
 
+  /**
+   * Compute the two scalars a and b to eliminate the variable v so that
+   * a*c1 + b*c2 lead to a constraint with eliminated v
+   * @param c1
+   * @param c2
+   * @param v
+   * @return (a,b)
+   */
   private def computeScalar(c1: Constraint, c2: Constraint, v: PBLVariable): (BigInt, BigInt) = {
     val a1 = c1.terms.find(_.l.v == v).get.a
     val a2 = c2.terms.find(_.l.v == v).get.a
@@ -204,8 +230,6 @@ object LearnUtil {
 
   /**
    * Check if the given constraint is 1UIP or not
-   * Note: Currently only applicable for clauses
-   * Maybe the method can be adapted for pseudo-boolean constraints
    * @param c1
    * @param level
    * @return
