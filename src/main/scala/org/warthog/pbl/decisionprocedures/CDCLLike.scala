@@ -22,7 +22,7 @@ class CDCLLike extends DecisionProcedure {
   var numberOfLearnedClauses = 0
 
   /**
-   * Adding a constraint to the instance
+   * Adding a constraint to the constraints
    * @param c the constraint to add
    */
   def add(c: Constraint) {
@@ -38,6 +38,13 @@ class CDCLLike extends DecisionProcedure {
       lastState = Solver.UNKNOWN
   }
 
+  /**
+   * Method is a wrapper for the private solve-method.
+   * Solving process starts only if the solver state is unknown.
+   * After solving a cleanUp method prepares the solver for new solving calls
+   * @param constraints additional constraints to solve
+   * @return the constants Solver.SAT, Solver.UNSAT or Solver.UNKNOWN
+   */
   def solve(constraints: List[Constraint]): Int = {
     if (!constraints.isEmpty)
       add(constraints)
@@ -46,6 +53,7 @@ class CDCLLike extends DecisionProcedure {
     if (lastState == Solver.UNKNOWN) {
       unassignVariables
       initConstraints
+      /* only if no empty constraint is included in the constraint set the solver starts*/
       if (lastState == Solver.UNKNOWN) {
         solve
       }
@@ -67,10 +75,16 @@ class CDCLLike extends DecisionProcedure {
     numberOfLearnedClauses = 0
   }
 
+  /**
+   * Mark the solver's initial stack position
+   */
   def mark() {
     marks = constraints.length :: marks
   }
 
+  /**
+   * Undo all the additions until the last marked position.
+   */
   def undo() {
     marks match {
       case h :: t => {
@@ -82,6 +96,10 @@ class CDCLLike extends DecisionProcedure {
     }
   }
 
+  /**
+   *
+   * @return the current model
+   */
   def getModel() = {
     require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
 
@@ -97,29 +115,28 @@ class CDCLLike extends DecisionProcedure {
   }
 
   /**
-   * Main entry point for solving the given instance
-   * @return true if the instance is sat else false
+   * Solve the given set of constraints and set the state of the solver
    */
   private def solve() {
-    //else try to solve the instance
     while (true) {
       unitPropagation match {
         case Some(c) => {
           //conflict occurred => conflict has to be analyzed
-          val backtrackLevel = analyzeConflict(c)
-          if (backtrackLevel == Solver.UNSAT) {
+          val solverState = analyzeConflictAndBacktrack(c)
+          if (solverState == Solver.UNSAT) {
             lastState = Solver.UNSAT
             return
           }
         }
         case None => {
-          //non conflict occurred => assign a new chosen variable
+          //no conflict occurred => assign a new chosen variable
           getUnassignedVar match {
             case None => {
               lastState = Solver.SAT
               return
             }
             case Some(v) => {
+              //increment level and assign the chosen variable
               level += 1
               v.assign(false, units, level, null)
               //update activity
@@ -132,16 +149,27 @@ class CDCLLike extends DecisionProcedure {
     }
   }
 
+  /**
+   * Print the variables and their value (TRUE, FALSE or OPEN)
+   */
   def printVariables {
     variables.values.toList.sortBy(_.ID).map { v =>
-      println(v)
+      println(v + ": " + v.state)
     }
   }
 
+  /**
+   * Unassign all variables
+   */
   private def unassignVariables {
     variables.values.map(_.unassign())
   }
 
+  /**
+   * Initialise all constraints.
+   * Add all unit constraints to the set units and
+   * set the solver state to unsat if an empty constraint is included
+   */
   private def initConstraints() {
     constraints.map(c =>
       c.initWatchedLiterals match {
@@ -152,6 +180,9 @@ class CDCLLike extends DecisionProcedure {
     )
   }
 
+  /**
+   * Prepare the solver for the next solve call.
+   */
   private def cleanUp {
     level = 0
     stack.clear()
@@ -185,13 +216,13 @@ class CDCLLike extends DecisionProcedure {
   }
 
   /**
-   * Method computes the occurrences of the variables of the given instance
-   * @param instance
+   * Method computes the occurrences of the variables of the given set of constraints
+   * @param constraints
    * @return the occurrences of the variables
    */
-  private def computeOccurrences(instance: List[Constraint]): mutable.HashMap[PBLVariable, Int] = {
+  private def computeOccurrences(constraints: List[Constraint]): mutable.HashMap[PBLVariable, Int] = {
     var occ = mutable.HashMap[PBLVariable, Int]()
-    instance.map(_.terms.map { t =>
+    constraints.map(_.terms.map { t =>
       occ.get(t.l.v) match {
         case Some(o) => occ.update(t.l.v, o + 1)
         case None => {
@@ -204,7 +235,7 @@ class CDCLLike extends DecisionProcedure {
 
   /**
    * Treat all unit constraints and all literals which has to be propagated
-   * @return
+   * @return Some(conflict) if a conflict occurs else None
    */
   private def unitPropagation: Option[Constraint] = {
     while (!units.isEmpty) {
@@ -234,37 +265,39 @@ class CDCLLike extends DecisionProcedure {
   }
 
   /**
-   * Analyze the conflict and compute the level to backtrack
+   * Analyze the conflict and compute the level to backtrack.
+   * Then backtrack to the computed level.
    * @param emptyClause the conflict
-   * @return the backtrack level
+   * @return the new state of the solver (UNSAT or UNKNOWN)
    */
-  private def analyzeConflict(emptyClause: Constraint): Int = {
+  private def analyzeConflictAndBacktrack(emptyClause: Constraint): Int = {
     var backtrackLevel = -1
     //conflict at level 0 => unsat
     if (level == 0) {
-      backtrackLevel = -1
       Solver.UNSAT
     } else {
-      //compute the clause to learn
-      var learnedClause = LearnUtil.learnPBConstraint(emptyClause, stack, level)
+      //compute the constraint to learn
+      var learnedConstraint = LearnUtil.learnPBConstraint(emptyClause, stack, level)
+      //add the learned clause to the constraints
+      constraints :+= learnedConstraint
+      //update learned clause counter
+      numberOfLearnedClauses += 1
+      //update the units
+      units = mutable.HashSet[Constraint](learnedConstraint)
       //update activity
-      learnedClause.terms.map(_.l.v.activity += 1)
-      //compute backtracking level
-      for (t <- learnedClause.terms) {
+      learnedConstraint.terms.map(_.l.v.activity += 1)
+
+      /* compute backtracking level
+       * backtracking level equals second largest level of the constraint
+       */
+      for (t <- learnedConstraint.terms) {
         val level: Int = t.l.v.level
         if (level != this.level && level > backtrackLevel) {
           backtrackLevel = level
         }
       }
-      learnedClause = setWatchedLiterals(learnedClause, backtrackLevel)
-      //add the learned clause to the instance
-      constraints :+= learnedClause
-      //update learned clause counter
-      numberOfLearnedClauses += 1
-      //update the units
-      units = mutable.HashSet[Constraint](learnedClause)
       //check if learned clause is initial unit
-      learnedClause match {
+      learnedConstraint match {
         case cardinality: PBLCardinalityConstraint => {
           if(cardinality.terms.size == cardinality.degree)
             backtrackLevel = 0
@@ -275,9 +308,16 @@ class CDCLLike extends DecisionProcedure {
             backtrackLevel = 0
         }
       }
+      learnedConstraint = setWatchedLiterals(learnedConstraint, backtrackLevel)
 
       backtrack(backtrackLevel)
-      if(learnedClause.getCurrentState() == ConstraintState.EMPTY){
+
+      /**
+       * Only clauses will get unit after backtracking.
+       * For other pb constraints you have to backtrack until the constraint is
+       * unit or unresolved (success)
+       */
+      if(learnedConstraint.getCurrentState() == ConstraintState.EMPTY){
         if(backtrackLevel != 0) {
           backtrack(0)
         }
@@ -316,7 +356,6 @@ class CDCLLike extends DecisionProcedure {
 
   /**
    * Compute the next variable, which should be assigned
-   * The more a variable occurs the earlier it is chosen
    * @return the next variable to assign
    */
   private def getUnassignedVar: Option[PBLVariable] = {
@@ -325,7 +364,7 @@ class CDCLLike extends DecisionProcedure {
     if (openVars.isEmpty) {
       None
     } else {
-      //find the variable with highest occurrence
+      //find the variable with highest activity
       Some(openVars.maxBy(_.activity))
     }
   }
@@ -358,8 +397,9 @@ class CDCLLike extends DecisionProcedure {
             val t = cardinality.terms.find(_.l.v.level == backtrackLevel).get
             watched += t
             t.l.v.add(cardinality)
-            //case cardinality
+          //case cardinality
           } else {
+            //add those literals with highest level
             var terms = cardinality.terms.sortBy(_.l.v.level).toList.reverse
             while(watched.size != cardinality.degree.+(1).toInt) {
               if(!watched.contains(terms.head)) {
@@ -370,23 +410,34 @@ class CDCLLike extends DecisionProcedure {
             }
           }
         }
+        //set the computed watched literals and return the constraint
         cardinality.watchedLiterals = watched
         cardinality
       }
-      //TODO treat pseudo-boolean constraints
       case c: PBLConstraint => c.initWatchedLiterals(); c
     }
   }
 
+  /**
+   * Method deletes the last n constraints without updating the variables.
+   * Variables which only occur at the deleted constraints aren't removed
+   * @param n remove the last n constraints
+   */
   private def deleteConstraints(n: Int) {
     val splittedConstraints = constraints.splitAt(constraints.size - n)
+    //delete the last n constraints
     constraints = splittedConstraints._1
-    //remove the learned constraints of watchedList of the variables
+    //remove the constraints of watchedList of the variables
     splittedConstraints._2.map(c =>
       c.terms.map(t => t.l.v.watched -= c)
     )
   }
 
+  /**
+   * Method deletes the last n constraints with updating the variables.
+   * Variables which only occur at the deleted constraints are removed
+   * @param n remove the last n constraints
+   */
   private def deleteConstraintsAndUpdateVariables(n: Int) {
     //compute all variables of deleted constraints
     val vars: List[PBLVariable] = constraints.splitAt(constraints.size - n)._2.map(_.terms.map(_.l.v)).flatten.distinct
