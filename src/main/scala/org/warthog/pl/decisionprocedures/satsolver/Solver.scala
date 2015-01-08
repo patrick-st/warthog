@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler
+ * Copyright (c) 2011-2014, Andreas J. Kuebler & Christoph Zengler & Rouven Walter
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,6 +27,9 @@ package org.warthog.pl.decisionprocedures.satsolver
 
 import org.warthog.generic.formulas.{Formula, Falsum}
 import org.warthog.pl.formulas.PL
+import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
+import org.warthog.pl.transformations.CNFUtil
+import org.warthog.generic.datastructures.cnf.ClauseLike
 
 /**
  * Common interface for SAT solvers
@@ -41,7 +44,19 @@ trait Solver {
    * Add a formula to the solver.  If the solver held a formula `F` before, it now holds `F /\ fm`.
    * @param fm the formula to add
    */
-  def add(fm: Formula[PL])
+  def add(fm: Formula[PL]) {
+    add(CNFUtil.toImmutableCNF(fm))
+  }
+
+  def add(clauses: Traversable[ClauseLike[PL, PLLiteral]]) {
+    clauses.foreach(add)
+  }
+
+  /**
+   * Add a clause to the solver.
+   * @param clause the clause to add
+   */
+  def add(clause: ClauseLike[PL, PLLiteral])
 
   /**
    * Mark a solver's internal stack position.  Executing

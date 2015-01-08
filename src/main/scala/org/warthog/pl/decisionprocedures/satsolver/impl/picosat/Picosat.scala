@@ -31,7 +31,8 @@ import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
 import org.warthog.pl.formulas.{PLAtom, PL}
 import org.warthog.generic.formulas._
 import org.warthog.pl.transformations.CNFUtil
-import org.warthog.pl.datastructures.cnf.ImmutablePLClause
+import org.warthog.pl.datastructures.cnf.{PLLiteral, ImmutablePLClause}
+import org.warthog.generic.datastructures.cnf.ClauseLike
 
 /**
  * Solver Wrapper for Picosat.
@@ -56,20 +57,16 @@ class Picosat extends Solver {
     lastState = Solver.UNKNOWN
   }
 
-  override def add(formula: Formula[PL]) {
-    addClausesAndUpdateLastState(CNFUtil.toImmutableCNF(formula))
-  }
-
-  private def addClausesAndUpdateLastState(clauses: List[ImmutablePLClause]) {
-    val clausesWithIDs = clauses.map(getIDsWithPhase)
-    clausesWithIDs.foreach(addClauseWithIDs)
-    clausesStack = clausesWithIDs ++ clausesStack
+  override def add(clause: ClauseLike[PL, PLLiteral]) {
+    val clauseWithIDs = getIDsWithPhase(clause)
+    addClauseWithIDs(clauseWithIDs)
+    clausesStack = (clauseWithIDs :: clausesStack)
 
     if (lastState != Solver.UNSAT)
       lastState = Solver.UNKNOWN
   }
 
-  private def getIDsWithPhase(clause: ImmutablePLClause): Set[Int] = {
+  private def getIDsWithPhase(clause: ClauseLike[PL, PLLiteral]): Set[Int] = {
     clause.literals.map(literal => {
       val (v, phaseFactor) = (literal.variable, if (literal.phase) 1 else -1)
       varToID.getOrElseUpdate(v, {
@@ -126,8 +123,8 @@ class Picosat extends Solver {
           .filter(picosatLit => idToVar.contains(picosatLit))
           .map(picosatLit => idToVar(picosatLit)).toList
         val negativeVariables = picosatLiterals.filter(picosatLit => picosatLit < 0)
-          .filter(picosatLit => idToVar.contains(picosatLit))
-          .map(picosatLit => idToVar(picosatLit)).toList
+          .filter(picosatLit => idToVar.contains(-picosatLit))
+          .map(picosatLit => idToVar(-picosatLit)).toList
         Some(Model(positiveVariables, negativeVariables))
       }
     }

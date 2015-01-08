@@ -23,24 +23,35 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.warthog.pl.decisionprocedures.satsolver
+package org.warthog.pl.optimization.maxsat
 
-import org.warthog.pl.formulas.{PLAtom, PL}
-import org.warthog.generic.formulas.{And, Formula}
+import org.warthog.pl.datastructures.cnf.{PLLiteral, MutablePLClause, ImmutablePLClause}
+import org.warthog.pl.decisionprocedures.satsolver.impl.picosat.Picosat
+import collection.mutable
+import org.warthog.pl.formulas.{PL, PLAtom}
+import org.warthog.pl.decisionprocedures.satsolver.Model
+import org.warthog.generic.datastructures.cnf.ClauseLike
 
-/**
- * A (partial) Model representing a satisfying assignment of a propositional formula.
- */
-case class Model(positiveVariables: List[PLAtom], negativeVariables: List[PLAtom]) {
-
-  def toFormula = And(And(positiveVariables: _*), And(negativeVariables: _*))
-
-  def filterNot(prefix: String) = {
-    new Model(
-      positiveVariables.filterNot(v => v.name.startsWith(prefix)),
-      negativeVariables.filterNot(v => v.name.startsWith(prefix))
-    )
+object MaxSATHelper {
+  /**
+   * Calculate the costs of unsatisfied clause weights.
+   *
+   * Assumption: Model is a complete variable assignment.
+   *
+   * @param clauses
+   * @param weights
+   * @param model
+   * @return
+   */
+  def cost(clauses: List[ClauseLike[PL, PLLiteral]], weights: List[Long], model: Model): Long = {
+    var benefit = 0L
+    val posVars = model.positiveVariables
+    val negVars = model.negativeVariables
+    for (weightedClause <- weights.zip(clauses))
+      if (weightedClause._2.literals.exists(lit =>
+        lit.phase && posVars.contains(lit.variable)
+          || !lit.phase && negVars.contains(lit.variable)))
+        benefit += weightedClause._1
+    weights.sum - benefit
   }
-
-  override def toString = (positiveVariables.map(_.name) ++ negativeVariables.map(v => "-" + v.name)).mkString(",")
 }
