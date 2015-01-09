@@ -138,7 +138,7 @@ object LearnUtil {
       c2_.terms = c2_.terms.filter(_ != term2remove)
       c2_.degree -= term2remove.a
       //saturation step
-      c2_.reduce()
+      c2_.saturation()
       //if a tautology arises, reduce the constraint to a clause
       if(c2_.degree <= 0)
         return reduce2Clause(c2,v)
@@ -222,7 +222,7 @@ object LearnUtil {
       new PBLCardinalityConstraint(c1_.terms, c1_.degree + c2_.degree)
     else {
       var c: Constraint = new PBLConstraint(c1_.terms, c1_.degree + c2_.degree)
-      c.reduce()
+      c.saturation()
       if (c.terms.forall(_.a.abs == c.terms(0).a.abs))
         c = new PBLCardinalityConstraint(c.terms, c.degree)
       c

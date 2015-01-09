@@ -63,9 +63,9 @@ abstract class Constraint() {
   }
 
   /**
-   * Reduce the all coefficients which are greater than the degree
+   * Reduce all coefficients which are greater than the degree
    */
-  def reduce() {
+  def saturation() {
     terms.map(t =>
      if(t.a > degree){
        t.a = degree
