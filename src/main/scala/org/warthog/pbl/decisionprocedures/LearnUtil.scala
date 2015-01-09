@@ -3,7 +3,7 @@ package org.warthog.pbl.decisionprocedures
 import org.warthog.pbl.datastructures._
 
 import scala.collection.mutable
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ListBuffer
 
 /**
  *
@@ -12,9 +12,9 @@ object LearnUtil {
 
   /**
    * Method to learn PB Constraints
-   * @param conflict
-   * @param stack
-   * @param level
+   * @param conflict to analyze
+   * @param stack of assigned variables in reversed order
+   * @param level current decision level
    * @return the constraint to learn
    */
   def learnPBConstraint(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
@@ -23,9 +23,9 @@ object LearnUtil {
 
   /**
    * Method to learn clauses
-   * @param conflict
-   * @param stack
-   * @param level
+   * @param conflict to analyze
+   * @param stack of assigned variables in reversed order
+   * @param level current decssion level
    * @return the clause to learn
    */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
@@ -53,7 +53,7 @@ object LearnUtil {
 
     var c1 = conflict
     //resolve the conflict until the resolvent is 1UIP
-    while (!stack.isEmpty) {
+    while (stack.nonEmpty) {
       val v = stack.pop()
       //if no resolve step is possible return the computed constraint
       if(v.reason == null || stack.isEmpty) {
@@ -120,8 +120,8 @@ object LearnUtil {
   private def reduce(c1: Constraint, c2: Constraint, v: PBLVariable): Constraint = {
     val c1_ = c1.copy
     val c2_ = c2.copy
-    val slack1 = c1_.getSlack()
-    var slack2 = c2_.getSlack()
+    val slack1 = c1_.getSlack
+    var slack2 = c2_.getSlack
     //get the scalars which are necessary to eliminate the variable v
     var coeffPair = computeScalar(c1_,c2_,v)
     var coeff1 = coeffPair._1
@@ -143,7 +143,7 @@ object LearnUtil {
       if(c2_.degree <= 0)
         return reduce2Clause(c2,v)
       //update the slacks and the coefficients
-      slack2 = c2_.getSlack()
+      slack2 = c2_.getSlack
       coeffPair = computeScalar(c1_,c2_,v)
       coeff1 = coeffPair._1
       coeff2 = coeffPair._2
@@ -199,7 +199,7 @@ object LearnUtil {
     //add all terms with equal variables accordingly
     for (t <- c2_.terms) {
       c1_.terms.find(_.l.v == t.l.v) match {
-        case Some(term) => {
+        case Some(term) =>
           if (term.l.phase == t.l.phase) {
             //5 x1 + 2 x1 = 8 x1
             term.a += t.a
@@ -208,12 +208,11 @@ object LearnUtil {
             // note: 2 ~x1 can be only transformed to -2 x1 by updating the degree accordingly
             c2_.degree -= t.a
             term.a -= t.a
-            if (term.a == 0) {
+            if (term.a == BigInt(0)) {
               //delete the term
               c1_.terms = c1_.terms.filter(_.l.v != t.l.v)
             }
           }
-        }
         case None => c1_.terms :+= t
       }
     }
@@ -253,8 +252,8 @@ object LearnUtil {
   private def is1UIP(c1: Constraint, level: Int) = {
     c1 match {
       case cardinality: PBLCardinalityConstraint =>
-        cardinality.terms.filter(_.l.v.level == level).size == cardinality.degree
-      case c: PBLConstraint => c.terms.filter(_.l.v.level == level).size == 1
+        BigInt(cardinality.terms.count(_.l.v.level == level)) == cardinality.degree
+      case c: PBLConstraint => c.terms.count(_.l.v.level == level) == 1
     }
   }
 }

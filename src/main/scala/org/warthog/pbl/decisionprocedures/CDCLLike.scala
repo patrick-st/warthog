@@ -1,8 +1,6 @@
 package org.warthog.pbl.decisionprocedures
 
-import org.warthog.generic.parsers.DIMACSReader
 import org.warthog.pbl.datastructures._
-import org.warthog.pbl.parsers.PBCompetitionReader
 import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
 import org.warthog.pl.formulas.PLAtom
 import scala.collection.mutable
@@ -46,18 +44,18 @@ class CDCLLike extends DecisionProcedure {
    * @return the constants Solver.SAT, Solver.UNSAT or Solver.UNKNOWN
    */
   def solve(constraints: List[Constraint]): Int = {
-    if (!constraints.isEmpty)
+    if (constraints.nonEmpty)
       add(constraints)
 
     //solve only if solver state is unknown
     if (lastState == Solver.UNKNOWN) {
-      unassignVariables
-      initConstraints
+      unassignVariables()
+      initConstraints()
       /* only if no empty constraint is included in the constraint set the solver starts*/
       if (lastState == Solver.UNKNOWN) {
-        solve
+        solve()
       }
-      cleanUp
+      cleanUp()
     }
     lastState
   }
@@ -87,11 +85,10 @@ class CDCLLike extends DecisionProcedure {
    */
   def undo() {
     marks match {
-      case h :: t => {
+      case h :: t =>
         marks = t
         lastState = Solver.UNKNOWN
         deleteConstraintsAndUpdateVariables(constraints.length - h)
-      }
       case _ =>
     }
   }
@@ -100,17 +97,16 @@ class CDCLLike extends DecisionProcedure {
    *
    * @return the current model
    */
-  def getModel() = {
+  def getModel = {
     require(lastState == Solver.SAT || lastState == Solver.UNSAT, "getModel(): Solver needs to be in SAT or UNSAT state!")
 
     lastState match {
       case Solver.UNSAT => None
-      case Solver.SAT => {
+      case Solver.SAT =>
         val partition = variables.values.partition(_.state == State.TRUE)
         val pos = partition._1.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
         val neg = partition._2.foldLeft(List[PLAtom]())((l, v) => l :+ PLAtom(v.name))
         Some(Model(pos, neg))
-      }
     }
   }
 
@@ -120,31 +116,27 @@ class CDCLLike extends DecisionProcedure {
   private def solve() {
     while (true) {
       unitPropagation match {
-        case Some(c) => {
+        case Some(c) =>
           //conflict occurred => conflict has to be analyzed
           val solverState = analyzeConflictAndBacktrack(c)
           if (solverState == Solver.UNSAT) {
             lastState = Solver.UNSAT
             return
           }
-        }
-        case None => {
+        case None =>
           //no conflict occurred => assign a new chosen variable
           getUnassignedVar match {
-            case None => {
+            case None =>
               lastState = Solver.SAT
               return
-            }
-            case Some(v) => {
+            case Some(v) =>
               //increment level and assign the chosen variable
               level += 1
               v.assign(false, units, level, null)
               //update activity
               variables.values.map(_.activity *= 0.95)
               stack.push(v)
-            }
           }
-        }
       }
     }
   }
@@ -152,7 +144,7 @@ class CDCLLike extends DecisionProcedure {
   /**
    * Print the variables and their value (TRUE, FALSE or OPEN)
    */
-  def printVariables {
+  def printVariables = {
     variables.values.toList.sortBy(_.ID).map { v =>
       println(v + ": " + v.state)
     }
@@ -161,7 +153,7 @@ class CDCLLike extends DecisionProcedure {
   /**
    * Unassign all variables
    */
-  private def unassignVariables {
+  private def unassignVariables() {
     variables.values.map(_.unassign())
   }
 
@@ -183,7 +175,7 @@ class CDCLLike extends DecisionProcedure {
   /**
    * Prepare the solver for the next solve call.
    */
-  private def cleanUp {
+  private def cleanUp() {
     level = 0
     stack.clear()
     units.clear()
@@ -202,17 +194,15 @@ class CDCLLike extends DecisionProcedure {
     }
 
     //reset the constraints
-    constraints.map { c =>
-      c match {
-        case cardinality: PBLCardinalityConstraint => {
+    constraints.map(
+      _ match {
+        case cardinality: PBLCardinalityConstraint =>
           cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
-        }
-        case constraint: PBLConstraint => {
+        case constraint: PBLConstraint =>
           constraint.currentSum = 0
           constraint.slack = 0
-        }
       }
-    }
+    )
   }
 
   /**
@@ -225,9 +215,7 @@ class CDCLLike extends DecisionProcedure {
     constraints.map(_.terms.map { t =>
       occ.get(t.l.v) match {
         case Some(o) => occ.update(t.l.v, o + 1)
-        case None => {
-          occ.+=((t.l.v, 1))
-        }
+        case None => occ.+=((t.l.v, 1))
       }
     })
     occ
@@ -238,7 +226,7 @@ class CDCLLike extends DecisionProcedure {
    * @return Some(conflict) if a conflict occurs else None
    */
   private def unitPropagation: Option[Constraint] = {
-    while (!units.isEmpty) {
+    while (units.nonEmpty) {
       for (unit <- units) {
         val literals = unit.getLiteralsToPropagate
         //propagate all literals
@@ -251,9 +239,7 @@ class CDCLLike extends DecisionProcedure {
           stack.push(l.v)
           conflict match {
             //return the conflict if one occurs
-            case Some(c) => {
-              return Some(c)
-            }
+            case Some(c) => return Some(c)
             case _ =>
           }
         }
@@ -298,15 +284,13 @@ class CDCLLike extends DecisionProcedure {
       }
       //check if learned clause is initial unit
       learnedConstraint match {
-        case cardinality: PBLCardinalityConstraint => {
-          if(cardinality.terms.size == cardinality.degree)
+        case cardinality: PBLCardinalityConstraint =>
+          if(BigInt(cardinality.terms.size) == cardinality.degree)
             backtrackLevel = 0
-        }
-        case constraint: PBLConstraint => {
+        case constraint: PBLConstraint =>
           val initialSlack = constraint.terms.map(_.a).sum - constraint.degree
           if(initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
             backtrackLevel = 0
-        }
       }
       learnedConstraint = setWatchedLiterals(learnedConstraint, backtrackLevel)
 
@@ -317,7 +301,7 @@ class CDCLLike extends DecisionProcedure {
        * For other pb constraints you have to backtrack until the constraint is
        * unit or unresolved (success)
        */
-      if(learnedConstraint.getCurrentState() == ConstraintState.EMPTY){
+      if(learnedConstraint.getCurrentState == ConstraintState.EMPTY){
         if(backtrackLevel != 0) {
           backtrack(0)
         }
@@ -334,7 +318,7 @@ class CDCLLike extends DecisionProcedure {
    * @param level to backtrack
    */
   private def backtrack(level: Int) {
-    while (!stack.isEmpty && stack.top.level > level) {
+    while (stack.nonEmpty && stack.top.level > level) {
       val vari = stack.pop()
       vari.unassign()
     }
@@ -348,8 +332,8 @@ class CDCLLike extends DecisionProcedure {
     constraints.map { c =>
       if (c.isInstanceOf[PBLConstraint]) {
         //update slack and currentSum
-        c.asInstanceOf[PBLConstraint].updateSlack
-        c.asInstanceOf[PBLConstraint].updateCurrentSum
+        c.asInstanceOf[PBLConstraint].updateSlack()
+        c.asInstanceOf[PBLConstraint].updateCurrentSum()
       }
     }
   }
@@ -377,9 +361,9 @@ class CDCLLike extends DecisionProcedure {
    */
   private def setWatchedLiterals(c: Constraint, backtrackLevel: Int): Constraint = {
     c match {
-      case cardinality: PBLCardinalityConstraint => {
-        val watched = new ArrayBuffer[PBLTerm](math.min(cardinality.terms.size, (cardinality.degree.+(1).toInt)))
-        if (cardinality.terms.size == cardinality.degree) {
+      case cardinality: PBLCardinalityConstraint =>
+        val watched = new ArrayBuffer[PBLTerm](math.min(cardinality.terms.size, cardinality.degree.+(1).toInt))
+        if (BigInt(cardinality.terms.size) == cardinality.degree) {
           //all literals have to be watched
           cardinality.terms.copyToBuffer(watched)
           watched.map(_.l.v.add(cardinality))
@@ -393,7 +377,7 @@ class CDCLLike extends DecisionProcedure {
           }
           //set the rest of the literals
           //case clause
-          if(cardinality.degree == 1){
+          if(cardinality.degree == BigInt(1)){
             val t = cardinality.terms.find(_.l.v.level == backtrackLevel).get
             watched += t
             t.l.v.add(cardinality)
@@ -413,8 +397,7 @@ class CDCLLike extends DecisionProcedure {
         //set the computed watched literals and return the constraint
         cardinality.watchedLiterals = watched
         cardinality
-      }
-      case c: PBLConstraint => c.initWatchedLiterals(); c
+      case c: PBLConstraint => c.initWatchedLiterals; c
     }
   }
 
