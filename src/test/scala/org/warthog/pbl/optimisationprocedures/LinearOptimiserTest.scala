@@ -72,7 +72,7 @@ class LinearOptimiserTest extends Specification {
       val linearOptimiser = new LinearOptimiser(new CDCLLike)
       linearOptimiser.add(instance._1)
       linearOptimiser.min(instance._2.get)
-      linearOptimiser.min(C.f08_objectiveFunction) == Some(2)
+      linearOptimiser.min(C.f08_objectiveFunction.map(_.copy)) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f09.cnf.opb"))

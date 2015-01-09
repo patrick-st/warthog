@@ -71,7 +71,7 @@ class BinarySearchOptimiserTest extends Specification{
       val binaryOptimiser = new BinarySearchOptimiser(new CDCLLike)
       binaryOptimiser.add(instance._1)
       binaryOptimiser.min(instance._2.get)
-      binaryOptimiser.min(C.f08_objectiveFunction) == Some(2)
+      binaryOptimiser.min(C.f08_objectiveFunction.map(_.copy)) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f09.cnf.opb"))

@@ -72,7 +72,7 @@ class BranchAndBoundOptimiserTest extends Specification{
       optimiser.min(instance._2.get)
       optimiser.reset()
       optimiser.add(instance._1)
-      optimiser.min(C.f08_objectiveFunction) == Some(2)
+      optimiser.min(C.f08_objectiveFunction.map(_.copy)) == Some(2)
     }
     "be 3 for formula f09.cnf" in {
       val instance = PBCompetitionReader.getInstance(getPBFileString("f09.cnf.opb"))
