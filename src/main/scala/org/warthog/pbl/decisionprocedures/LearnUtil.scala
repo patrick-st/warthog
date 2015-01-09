@@ -10,28 +10,48 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
  */
 object LearnUtil {
 
+  /**
+   * Method to learn PB Constraints
+   * @param conflict
+   * @param stack
+   * @param level
+   * @return the constraint to learn
+   */
   def learnPBConstraint(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
-    learn(reduce,resolve,conflict,stack,level)
+    learn((c: Constraint, v: PBLVariable) => c,reduce,resolve,conflict,stack,level)
   }
 
   /**
-   * Generic function to provide 2 different learn methods
-   * 1. pseudo-boolean constraint learning
-   * 2. cardinality constraint learning
+   * Method to learn clauses
+   * @param conflict
+   * @param stack
+   * @param level
+   * @return the clause to learn
+   */
+  def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
+    learn(reduce2Clause,reduce2Clause,resolveClauses,conflict,stack,level)
+  }
+
+  /**
+   * Generic function to provide three different learn methods
+   * 1. clause learning
+   * 2. pseudo-boolean constraint learning
+   * 3. cardinality constraint learning
    * For more informations see: Donald Chai, Andreas Kuehlmann: A Fast Pseudo-Boolean Constraint Solver
-   * @param reduce
+   * @param reduce1
+   * @param reduce2
    * @param resolve
    * @param conflict the conflict
    * @param stack the assigned variables and their reasons
    * @param level the current level
-   * @return the new constraint to learn
+   * @return the new clause to learn
    */
-  private def learn(reduce: (Constraint,Constraint, PBLVariable) => Constraint,
+  private def learn(reduce1: (Constraint, PBLVariable) => Constraint,
+                    reduce2: (Constraint,Constraint, PBLVariable) => Constraint,
                     resolve: (Constraint, Constraint, PBLVariable) => Constraint,
                     conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
 
     var c1 = conflict
-    val vars2Unassign = mutable.Set[PBLVariable]()
     //resolve the conflict until the resolvent is 1UIP
     while (!stack.isEmpty) {
       val v = stack.pop()
@@ -40,37 +60,9 @@ object LearnUtil {
         v.unassign()
         return c1
       }
+      c1 = reduce1(c1,v)
       if (isResolvable(c1, v.reason, v)) {
-        val c2 = reduce(c1,v.reason, v)
-        c1 = resolve(c1, c2, v)
-      }
-      v.unassign()
-      if (is1UIP(c1, level)) {
-        vars2Unassign.map(_.unassign())
-        return c1
-      }
-    }
-    null
-  }
-
-
-  /**
-   * Method computes a clause which can be learned
-   * For more informations see: Donald Chai, Andreas Kuehlmann: A Fast Pseudo-Boolean Constraint Solver
-   * @param conflict the conflict
-   * @param stack the assigned variables and their reasons
-   * @param level the current level
-   * @return the new clause to learn
-   */
-  def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
-
-    var c1 = conflict
-    //resolve the conflict until the resolvent is 1UIP
-    while (!stack.isEmpty) {
-      val v = stack.pop()
-      if (isResolvable(c1, v.reason, v)) {
-        c1 = reduce2Clause(c1, v)
-        val c2 = reduce2Clause(v.reason, v)
+        val c2 = reduce2(c1,v.reason, v)
         c1 = resolve(c1, c2, v)
       }
       v.unassign()
@@ -102,6 +94,16 @@ object LearnUtil {
       new PBLCardinalityConstraint(newTerms.toList, 1)
     }
   }
+
+  /**
+   * Wrapper for reduce2Clause(c: Constraint, v: PBLVariable)
+   * @param c1 is ignored
+   * @param c2 the constraint to reduce
+   * @param v this variable don't have to be removed
+   *          because over this variable will be resolved
+   * @return the reduced clause c2
+   */
+  private def reduce2Clause(c1: Constraint, c2: Constraint, v: PBLVariable): Constraint = reduce2Clause(c2,v)
 
   /**
    * Method guarantees that the resolved constraint will be unsatisfied under the current assignment.
@@ -164,7 +166,21 @@ object LearnUtil {
   }
 
   /**
-   * Computes the resolvent of two given constraints
+   * Computes the resolvent of two given clauses
+   * Note: Only applicable for clauses
+   * @param c1 first clause
+   * @param c2 second clause
+   * @param v the variable to resolve
+   * @return the resolvent
+   */
+  private def resolveClauses(c1: Constraint, c2: Constraint, v: PBLVariable) = {
+      val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+      new PBLCardinalityConstraint(newTerms, 1, true)
+  }
+
+  /**
+   * Computes the resolvent of two given constraints.
+   * This method is applicable for all kind of constraints.
    * @param c1 first constraint
    * @param c2 second constraint
    * @param v the variable to resolve
