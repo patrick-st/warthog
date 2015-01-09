@@ -39,7 +39,7 @@ class PBLConstraintTest extends Specification {
   "After initializing the watched literals, c1" should {
     "have the ConstraintState SUCCESS" in{
       val state = C.c1.initWatchedLiterals()
-      state must be equalTo ConstraintState.SUCCESS
+      state must be equalTo ConstraintState.UNRESOLVED
     }
     "have an initial slack of 5" in {
       C.c1.slack must be equalTo 5

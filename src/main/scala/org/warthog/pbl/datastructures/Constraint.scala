@@ -121,5 +121,5 @@ abstract class Constraint() {
 
 object ConstraintState extends Enumeration {
   type ConstraintState = Value
-  val UNIT, EMPTY, SAT, SUCCESS = Value
+  val UNIT, EMPTY, SAT, UNRESOLVED = Value
 }

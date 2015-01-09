@@ -55,7 +55,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
         i += 1
         i > degree
       }
-      ConstraintState.SUCCESS
+      ConstraintState.UNRESOLVED
     }
   }
 
@@ -68,7 +68,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState = {
     for (t <- watchedLiterals; if t.l.v == v) {
       //if the corresponding literal evaluates to true, nothing has to be updated
-      if (t.l.evaluates2True) return ConstraintState.SUCCESS
+      if (t.l.evaluates2True) return ConstraintState.UNRESOLVED
       //search for a new literal
       getNewWatchedLiteral match {
         //new literal was found
@@ -78,7 +78,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
           //update the watched lists of the variables
           t.l.v.remove(this)
           newTerm.l.v.add(this)
-          return ConstraintState.SUCCESS
+          return ConstraintState.UNRESOLVED
         }
         case None => {
           if (this.isUnit()) return ConstraintState.UNIT
@@ -115,7 +115,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt, var
     } else if(isUnit){
       ConstraintState.UNIT
     } else {
-      ConstraintState.SUCCESS
+      ConstraintState.UNRESOLVED
     }
   }
 

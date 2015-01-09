@@ -100,7 +100,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt, var removable:
       return ConstraintState.SAT
     if (this.isUnit)
       return ConstraintState.UNIT
-    else ConstraintState.SUCCESS
+    else ConstraintState.UNRESOLVED
   }
 
   def updateSlack {

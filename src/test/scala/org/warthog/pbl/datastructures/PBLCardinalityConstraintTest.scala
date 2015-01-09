@@ -39,7 +39,7 @@ class PBLCardinalityConstraintTest extends Specification {
   "After initializing the watched literals, c2" should {
     "have the ConstraintState SUCCESS" in{
       val state = C.c2.initWatchedLiterals()
-      state must be equalTo ConstraintState.SUCCESS
+      state must be equalTo ConstraintState.UNRESOLVED
     }
     "watch literal l1" in {
       C.c2.watchedLiterals.contains( new PBLTerm(1, C.l1)) must be equalTo true
