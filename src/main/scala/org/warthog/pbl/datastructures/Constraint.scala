@@ -17,14 +17,11 @@ abstract class Constraint() {
   var terms: List[PBLTerm]
   //right-hand side of the constraint
   var degree: BigInt
-  //is it allowed to remove the constraint from the instance or not
-  var removable: Boolean
 
-  def this(terms: List[PBLTerm], degree: BigInt, removable: Boolean = false) {
+  def this(terms: List[PBLTerm], degree: BigInt) {
     this()
     this.terms = terms
     this.degree = degree
-    this.removable = removable
     normalize()
   }
 

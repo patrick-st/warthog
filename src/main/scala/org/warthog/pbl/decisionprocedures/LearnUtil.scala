@@ -175,7 +175,7 @@ object LearnUtil {
    */
   private def resolveClauses(c1: Constraint, c2: Constraint, v: PBLVariable) = {
       val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
-      new PBLCardinalityConstraint(newTerms, 1, true)
+      new PBLCardinalityConstraint(newTerms, 1)
   }
 
   /**

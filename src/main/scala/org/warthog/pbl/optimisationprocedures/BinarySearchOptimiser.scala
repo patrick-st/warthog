@@ -42,9 +42,9 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     //check if objective function is cardinality
     if (objectiveFunction.forall(_.a.abs == objectiveFunction(0).a.abs)) {
       //Note: set the removable flag to true
-      maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLCardinalityConstraint(objectiveFunction, -rhs)
     } else {
-      maximizeFunction = new PBLConstraint(objectiveFunction, -rhs, true)
+      maximizeFunction = new PBLConstraint(objectiveFunction, -rhs)
     }
 
     //determine upper and lower bound for binary search
