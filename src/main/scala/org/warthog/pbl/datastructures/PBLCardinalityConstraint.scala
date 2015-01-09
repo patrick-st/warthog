@@ -20,8 +20,8 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
   def reduceCoefficients() {
     val coeff = terms(0).a
     terms.map(_.a = BigInt(1))
-    val tuple = (degree /% coeff)
-    degree = if (tuple._2 == 0) tuple._1 else tuple._1 + 1
+    val tuple = degree /% coeff
+    degree = if (tuple._2 == BigInt(0)) tuple._1 else tuple._1 + 1
   }
 
   /**
@@ -34,10 +34,10 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
    * Initialize the watched literals.
    * @return the state of the constraint
    */
-  def initWatchedLiterals() = {
+  def initWatchedLiterals = {
     if (terms.size < degree)
       ConstraintState.EMPTY
-    else if (terms.size == degree) {
+    else if (BigInt(terms.size) == degree) {
       //all literals have to be watched
       watchedLiterals = new ArrayBuffer[PBLTerm](terms.size)
       terms.copyToBuffer(watchedLiterals)
@@ -48,7 +48,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
       ConstraintState.SAT
     else {
       var i = 0
-      //watch degree + 1 many terms
+      //watch (degree + 1) many terms
       terms.exists { t =>
         watchedLiterals += t
         t.l.v.add(this)
@@ -68,26 +68,25 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean): ConstraintState = {
     for (t <- watchedLiterals; if t.l.v == v) {
       //if the corresponding literal evaluates to true, nothing has to be updated
-      if (t.l.evaluates2True) return ConstraintState.UNRESOLVED
+      if (t.l.evaluates2True)
+        return ConstraintState.UNRESOLVED
       //search for a new literal
       getNewWatchedLiteral match {
         //new literal was found
-        case Some(newTerm) => {
+        case Some(newTerm) =>
           //remove the old literal and add the new literal
           watchedLiterals = watchedLiterals.filter(_ != t) += newTerm
           //update the watched lists of the variables
           t.l.v.remove(this)
           newTerm.l.v.add(this)
           return ConstraintState.UNRESOLVED
-        }
-        case None => {
-          if (this.isUnit()) return ConstraintState.UNIT
-          if (this.isSat()) return ConstraintState.SAT
-        }
+        case None =>
+          if (this.isUnit) return ConstraintState.UNIT
+          if (this.isSat) return ConstraintState.SAT
       }
       return ConstraintState.EMPTY
     }
-    return ConstraintState.EMPTY
+    ConstraintState.EMPTY
   }
 
   /**
@@ -95,7 +94,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    if(isUnit()) {
+    if(isUnit) {
       watchedLiterals.foldLeft(List[PBLLiteral]()) { (list, term) =>
         if (term.l.v.state == State.OPEN)
           list :+ term.l
@@ -107,7 +106,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
       Nil
   }
 
-  def getCurrentState(): ConstraintState = {
+  def getCurrentState: ConstraintState = {
     if(isSat){
       ConstraintState.SAT
     } else if (watchedLiterals.count(t => t.l.evaluates2True || t.l.v.state == State.OPEN) < degree){
@@ -137,24 +136,16 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
    * Check if the constraint is unit or not
    * @return true if the constraint is unit else false
    */
-  private def isUnit(): Boolean = {
-    val openLiterals = watchedLiterals.count {
-      _.l.v.state == State.OPEN
-    }
-    val trueLiterals = watchedLiterals.count {
-      _.l.evaluates2True
-    }
-    openLiterals + trueLiterals == degree && trueLiterals < degree
+  private def isUnit: Boolean = {
+    val openLiterals = watchedLiterals.count(_.l.v.state == State.OPEN)
+    val trueLiterals = watchedLiterals.count(_.l.evaluates2True)
+    BigInt(openLiterals + trueLiterals) == degree && trueLiterals < degree
   }
 
   /**
    * Checks if the constraint is satisfied or not
    * @return true if the constraint is satisfied else false
    */
-  private def isSat(): Boolean = {
-    watchedLiterals.count {
-      _.l.evaluates2True
-    } >= degree
-  }
+  private def isSat: Boolean =  watchedLiterals.count(_.l.evaluates2True) >= degree
 }
 
