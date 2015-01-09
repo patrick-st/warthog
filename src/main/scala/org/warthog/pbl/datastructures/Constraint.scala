@@ -84,16 +84,17 @@ abstract class Constraint() {
     degree *= x
   }
 
-  def getCurrentState(): ConstraintState.Value
+  /**
+   * Method computes the current state of the constraint
+   * @return the state (sat, empty, unit or unresolved)
+   */
+  def getCurrentState: ConstraintState.Value
 
-  def getSlack(): BigInt = {
-    terms.foldLeft(BigInt(0)) { (sum, term) =>
-      if (!term.l.evaluates2False)
-        sum + term.a
-      else
-        sum
-    } - degree
-  }
+  /**
+   * Method computes the current slack of the constraint.
+   * @return the slack
+   */
+  def getSlack: BigInt = terms.filter(!_.l.evaluates2False).map(_.a).sum - degree
 
   /**
    * Initialize the watched literals.
