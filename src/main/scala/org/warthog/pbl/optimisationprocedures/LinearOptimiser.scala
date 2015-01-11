@@ -1,7 +1,7 @@
 package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures.{PBLConstraint, PBLCardinalityConstraint, Constraint, PBLTerm}
-import org.warthog.pbl.decisionprocedures.{DecisionProcedure, CDCLLike}
+import org.warthog.pbl.decisionprocedures.DecisionProcedure
 import org.warthog.pl.decisionprocedures.satsolver.{Solver, Model}
 import org.warthog.pl.formulas.PLAtom
 
@@ -57,7 +57,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     //start to optimize
     while (solver.solve(List[Constraint](maximizeFunction.copy)) == Solver.SAT) {
       //compute the max optimum
-      model = solver.getModel().get
+      model = solver.getModel.get
       maxOptimum = evaluateObjectiveFunction(maximizeFunction.terms, model)
       //update the objective function
       maximizeFunction.degree = maxOptimum + 1
@@ -77,7 +77,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     }
   }
 
-  def getModel() = model
+  def getModel = model
 
   private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
    val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||

@@ -37,5 +37,5 @@ trait OptimisationProcedure {
    */
   def reset()
 
-  def getModel(): Option[Model]
+  def getModel: Option[Model]
 }

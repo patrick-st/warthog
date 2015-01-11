@@ -1,7 +1,7 @@
 package org.warthog.pbl.optimisationprocedures
 
 import org.warthog.pbl.datastructures._
-import org.warthog.pl.decisionprocedures.satsolver.{Model, Solver}
+import org.warthog.pl.decisionprocedures.satsolver.Model
 import org.warthog.pl.formulas.PLAtom
 
 import scala.collection.mutable
@@ -77,7 +77,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
         val ub = normalizedFunction.filter(_.a > 0).map(_.a).sum + 1
         solve(ub)
       }
-      cleanUp
+      cleanUp()
     }
     //check if an optimum was found
     if (minOptimum == null)
@@ -86,17 +86,16 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
       Some(minOptimum)
   }
 
-  def getModel() = model
+  def getModel = model
 
   private def solve(currentUB: BigInt): Option[BigInt] = {
     unitPropagation match {
       //the instance can't be satisfied with this partial assignment
-      case Some(c) => {
+      case Some(c) =>
         //update activity
         c.terms.map(_.l.v.activity += 1)
         Some(currentUB)
-      }
-      case None => {
+      case None =>
         //lb = current value of objective function
         val lb = normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum + maximalIndependentSet
 
@@ -106,12 +105,11 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
         //chose next variable
         getNextVar match {
           //new optimum found
-          case None => {
+          case None =>
             minOptimum = objectiveFunction.filter(_.l.evaluates2True).map(_.a).sum
             model = computeModel()
-            return Some(normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum)
-          }
-          case Some(v) => {
+            Some(normalizedFunction.filter(_.l.evaluates2True).map(_.a).sum)
+          case Some(v) =>
             //update activity
             variables.values.map(_.activity *= 0.95)
             val backtrackLevel = level
@@ -127,13 +125,11 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
             v.assign(true, units, level, null)
             stack.push(v)
             Some(newUB.min(solve(newUB).get))
-          }
         }
-      }
     }
   }
 
-  private def cleanUp {
+  private def cleanUp() {
     level = 0
     stack.clear()
     units.clear()
@@ -147,21 +143,17 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     }
 
     //reset the constraints
-    constraints.map { c =>
-      c match {
-        case cardinality: PBLCardinalityConstraint => {
-          cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
-        }
-        case constraint: PBLConstraint => {
-          constraint.currentSum = 0
-          constraint.slack = 0
-        }
-      }
+    constraints.map {
+      case cardinality: PBLCardinalityConstraint =>
+        cardinality.watchedLiterals = new ArrayBuffer[PBLTerm](cardinality.degree.+(1).toInt)
+      case constraint: PBLConstraint =>
+        constraint.currentSum = 0
+        constraint.slack = 0
     }
   }
 
   private def unitPropagation: Option[Constraint] = {
-    while (!units.isEmpty) {
+    while (units.nonEmpty) {
       for (unit <- units) {
         val literals = unit.getLiteralsToPropagate
         //propagate all literals
@@ -174,9 +166,8 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
           stack.push(l.v)
           conflict match {
             //return the conflict if one occurs
-            case Some(c) => {
+            case Some(c) =>
               return Some(c)
-            }
             case _ =>
           }
         }
@@ -199,7 +190,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
 
   private def backtrack(level: Int): Unit = {
     units = mutable.HashSet[Constraint]()
-    while (!stack.isEmpty && stack.top.level > level) {
+    while (stack.nonEmpty && stack.top.level > level) {
       val vari = stack.pop()
       vari.unassign()
     }
@@ -213,8 +204,8 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     constraints.map { c =>
       if (c.isInstanceOf[PBLConstraint]) {
         //update slack and currentSum
-        c.asInstanceOf[PBLConstraint].updateSlack
-        c.asInstanceOf[PBLConstraint].updateCurrentSum
+        c.asInstanceOf[PBLConstraint].updateSlack()
+        c.asInstanceOf[PBLConstraint].updateCurrentSum()
       }
     }
   }
@@ -252,7 +243,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     //k is the degree of the cardinality constraint
     var k = 0
     var s: BigInt = 0
-    while (s < degree_ && !maxKoeffVariables.isEmpty) {
+    while (s < degree_ && maxKoeffVariables.nonEmpty) {
       s += maxKoeffVariables(0).a
       maxKoeffVariables = maxKoeffVariables.tail
       k += 1
@@ -274,7 +265,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     )
   }
 
-  private def unassignVariables {
+  private def unassignVariables() {
     variables.values.map(_.unassign())
   }
 
