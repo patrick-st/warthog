@@ -76,6 +76,12 @@ object C {
     new PBLTerm(1, l5.copy)
   )
 
+  val terms1Cardinality = List[PBLTerm](
+    new PBLTerm(1, l1.copy),
+    new PBLTerm(1, l2.copy),
+    new PBLTerm(1, l3.copy),
+    new PBLTerm(1, l4.copy))
+
   val c1 = new PBLConstraint(terms1, 5)
   val c1_1 = new PBLConstraint(terms1, 5)
   val c1_2 = new PBLConstraint(terms2, 5)
@@ -89,6 +95,8 @@ object C {
   val c5_1 = new PBLCardinalityConstraint(terms5_1, 2)
   val c5_2 = new PBLCardinalityConstraint(terms5_2, -2)
   val c6 = new PBLCardinalityConstraint(terms6, 1)
+
+  val c1Cardinality = new PBLCardinalityConstraint(terms1Cardinality,2)
 
   val emptyConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(1, new PBLLiteral(x2))), 3)
   val unitConstraint = new PBLConstraint(List[PBLTerm](new PBLTerm(2, new PBLLiteral(x3)), new PBLTerm(1, new PBLLiteral(x4))), 3)

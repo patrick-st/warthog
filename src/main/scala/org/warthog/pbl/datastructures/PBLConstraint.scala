@@ -107,5 +107,22 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    */
   def updateCurrentSum() = currentSum = terms.filter(_.l.evaluates2True).map(_.a).sum
 
+  def toCardinalityConstraint = {
+    //sort terms from biggest a to smallest a
+    var sortedTerms = terms.sortBy(_.a).reverse
+    //k is the degree of the cardinality constraint
+    var k = 0
+    var s: BigInt = 0
+    while (s < degree) {
+      s += sortedTerms.head.a
+      sortedTerms = sortedTerms.tail
+      k += 1
+    }
+    //copy the terms and exchange the coefficients
+    val cardinalityTerms: List[PBLTerm] = terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    cardinalityTerms.map(_.a = BigInt(1))
+    new PBLCardinalityConstraint(cardinalityTerms,k)
+  }
+
 }
 

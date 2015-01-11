@@ -33,6 +33,9 @@ class PBLConstraintTest extends Specification {
     "not be equal to c2" in {
       C.c1 == C.c2 must be equalTo false
     }
+    "be equal to c2Cardinality after reducing to cardinality constraint" in {
+      C.c1.toCardinalityConstraint == C.c1Cardinality must be equalTo true
+    }
   }
 
 
