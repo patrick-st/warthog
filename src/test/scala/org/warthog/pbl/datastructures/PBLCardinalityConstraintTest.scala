@@ -37,48 +37,48 @@ class PBLCardinalityConstraintTest extends Specification {
   }
 
   "After initializing the watched literals, c2" should {
-    "have the ConstraintState SUCCESS" in{
+    "have the ConstraintState SUCCESS" in {
       val state = C.c2.initWatchedLiterals()
       state must be equalTo ConstraintState.UNRESOLVED
     }
     "watch literal l1" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l1)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l1)) must be equalTo true
     }
     "watch literal l2" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l2)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l2)) must be equalTo true
     }
     "watch literal l4" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l4)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l4)) must be equalTo true
     }
     "not watch literal l5" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l5)) must be equalTo false
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l5)) must be equalTo false
     }
   }
 
   val units = mutable.HashSet[Constraint]()
   "After assigning x1 and x2 to false, c2" should {
     "be unit" in {
-      C.x1.assign(false,units,1,null)
-      C.x2.assign(false, units,1, null)
+      C.x1.assign(false, units, 1, null)
+      C.x2.assign(false, units, 1, null)
       units.contains(C.c2) must be equalTo true
     }
     "watch literal l2" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l2)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l2)) must be equalTo true
     }
     "watch literal l4" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l4)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l4)) must be equalTo true
     }
     "watch literal l5" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l5)) must be equalTo true
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l5)) must be equalTo true
     }
     "not watch literal l1" in {
-      C.c2.watchedLiterals.contains( new PBLTerm(1, C.l1)) must be equalTo false
+      C.c2.watchedLiterals.contains(new PBLTerm(1, C.l1)) must be equalTo false
     }
   }
 
   "After assigning x3 to false, c2" should {
     "be empty" in {
-      C.x4.assign(false,units,1,null).get must be equalTo C.c2
+      C.x4.assign(false, units, 1, null).get must be equalTo C.c2
     }
   }
 

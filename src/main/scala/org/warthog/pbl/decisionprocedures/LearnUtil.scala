@@ -18,7 +18,7 @@ object LearnUtil {
    * @return the constraint to learn
    */
   def learnPBConstraint(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
-    learn((c: Constraint, v: PBLVariable) => c,reduce,resolve,conflict,stack,level)
+    learn((c: Constraint, v: PBLVariable) => c, reduce, resolve, conflict, stack, level)
   }
 
   /**
@@ -29,7 +29,7 @@ object LearnUtil {
    * @return the clause to learn
    */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
-    learn(reduce2Clause,reduce2Clause,resolveClauses,conflict,stack,level)
+    learn(reduce2Clause, reduce2Clause, resolveClauses, conflict, stack, level)
   }
 
   /**
@@ -47,7 +47,7 @@ object LearnUtil {
    * @return the new clause to learn
    */
   private def learn(reduce1: (Constraint, PBLVariable) => Constraint,
-                    reduce2: (Constraint,Constraint, PBLVariable) => Constraint,
+                    reduce2: (Constraint, Constraint, PBLVariable) => Constraint,
                     resolve: (Constraint, Constraint, PBLVariable) => Constraint,
                     conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
 
@@ -56,13 +56,13 @@ object LearnUtil {
     while (stack.nonEmpty) {
       val v = stack.pop()
       //if no resolve step is possible return the computed constraint
-      if(v.reason == null || stack.isEmpty) {
+      if (v.reason == null || stack.isEmpty) {
         v.unassign()
         return c1
       }
-      c1 = reduce1(c1,v)
+      c1 = reduce1(c1, v)
       if (isResolvable(c1, v.reason, v)) {
-        val c2 = reduce2(c1,v.reason, v)
+        val c2 = reduce2(c1, v.reason, v)
         c1 = resolve(c1, c2, v)
       }
       v.unassign()
@@ -103,7 +103,7 @@ object LearnUtil {
    *          because over this variable will be resolved
    * @return the reduced clause c2
    */
-  private def reduce2Clause(c1: Constraint, c2: Constraint, v: PBLVariable): Constraint = reduce2Clause(c2,v)
+  private def reduce2Clause(c1: Constraint, c2: Constraint, v: PBLVariable): Constraint = reduce2Clause(c2, v)
 
   /**
    * Method guarantees that the resolved constraint will be unsatisfied under the current assignment.
@@ -123,16 +123,16 @@ object LearnUtil {
     val slack1 = c1_.getSlack
     var slack2 = c2_.getSlack
     //get the scalars which are necessary to eliminate the variable v
-    var coeffPair = computeScalar(c1_,c2_,v)
+    var coeffPair = computeScalar(c1_, c2_, v)
     var coeff1 = coeffPair._1
     var coeff2 = coeffPair._2
     //reduce c2_ until the resolvent will be empty
-    while(slack1*coeff1 + slack2*coeff2 >= 0){
+    while (slack1 * coeff1 + slack2 * coeff2 >= 0) {
       //only positive of open terms can be removed
       val removableTerms = c2_.terms.filter(t => (t.l.evaluates2True || t.l.v.state == State.OPEN) && t.l.v != v)
       //if no removable term exists, reduce the constraint to a clause
-      if(removableTerms.isEmpty)
-        return reduce2Clause(c2,v)
+      if (removableTerms.isEmpty)
+        return reduce2Clause(c2, v)
       val term2remove = removableTerms.minBy(_.a)
       //remove the term and update the degree
       c2_.terms = c2_.terms.filter(_ != term2remove)
@@ -140,11 +140,11 @@ object LearnUtil {
       //saturation step
       c2_.saturation()
       //if a tautology arises, reduce the constraint to a clause
-      if(c2_.degree <= 0)
-        return reduce2Clause(c2,v)
+      if (c2_.degree <= 0)
+        return reduce2Clause(c2, v)
       //update the slacks and the coefficients
       slack2 = c2_.getSlack
-      coeffPair = computeScalar(c1_,c2_,v)
+      coeffPair = computeScalar(c1_, c2_, v)
       coeff1 = coeffPair._1
       coeff2 = coeffPair._2
     }
@@ -174,8 +174,8 @@ object LearnUtil {
    * @return the resolvent
    */
   private def resolveClauses(c1: Constraint, c2: Constraint, v: PBLVariable) = {
-      val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
-      new PBLCardinalityConstraint(newTerms, 1)
+    val newTerms = (c1.terms.filter(_.l.v != v) union c2.terms.filter(_.l.v != v)).distinct.foldLeft(List[PBLTerm]())(_ :+ _.copy)
+    new PBLCardinalityConstraint(newTerms, 1)
   }
 
   /**

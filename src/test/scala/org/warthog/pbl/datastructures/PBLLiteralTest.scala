@@ -6,7 +6,7 @@ import org.warthog.pbl.C
 /**
  * Test for PBLLiteral
  */
-class PBLLiteralTest extends Specification{
+class PBLLiteralTest extends Specification {
   C.x1.state = State.TRUE
   C.x2.state = State.FALSE
   C.x3.state = State.TRUE

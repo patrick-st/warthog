@@ -67,9 +67,9 @@ abstract class Constraint() {
    */
   def saturation() {
     terms.map(t =>
-     if(t.a > degree){
-       t.a = degree
-     }
+      if (t.a > degree) {
+        t.a = degree
+      }
     )
   }
 

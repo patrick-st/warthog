@@ -10,7 +10,7 @@ import org.warthog.pbl.parsers.PBCompetitionReader
 /**
  * Tests for the binarySearchOptimiser
  */
-class BinarySearchOptimiserTest extends Specification{
+class BinarySearchOptimiserTest extends Specification {
 
   args(sequential = true)
 

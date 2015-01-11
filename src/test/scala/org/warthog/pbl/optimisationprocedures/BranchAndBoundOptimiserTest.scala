@@ -9,7 +9,7 @@ import org.warthog.pbl.parsers.PBCompetitionReader
 /**
  * Tests for the branch and bound optimisation method
  */
-class BranchAndBoundOptimiserTest extends Specification{
+class BranchAndBoundOptimiserTest extends Specification {
 
   args(sequential = true)
 

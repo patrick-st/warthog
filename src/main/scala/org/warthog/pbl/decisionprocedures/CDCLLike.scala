@@ -285,11 +285,11 @@ class CDCLLike extends DecisionProcedure {
       //check if learned clause is initial unit
       learnedConstraint match {
         case cardinality: PBLCardinalityConstraint =>
-          if(BigInt(cardinality.terms.size) == cardinality.degree)
+          if (BigInt(cardinality.terms.size) == cardinality.degree)
             backtrackLevel = 0
         case constraint: PBLConstraint =>
           val initialSlack = constraint.terms.map(_.a).sum - constraint.degree
-          if(initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
+          if (initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
             backtrackLevel = 0
       }
       learnedConstraint = setWatchedLiterals(learnedConstraint, backtrackLevel)
@@ -301,8 +301,8 @@ class CDCLLike extends DecisionProcedure {
        * For other pb constraints you have to backtrack until the constraint is
        * unit or unresolved (success)
        */
-      if(learnedConstraint.getCurrentState == ConstraintState.EMPTY){
-        if(backtrackLevel != 0) {
+      if (learnedConstraint.getCurrentState == ConstraintState.EMPTY) {
+        if (backtrackLevel != 0) {
           backtrack(0)
         }
         else {
@@ -377,16 +377,16 @@ class CDCLLike extends DecisionProcedure {
           }
           //set the rest of the literals
           //case clause
-          if(cardinality.degree == BigInt(1)){
+          if (cardinality.degree == BigInt(1)) {
             val t = cardinality.terms.find(_.l.v.level == backtrackLevel).get
             watched += t
             t.l.v.add(cardinality)
-          //case cardinality
+            //case cardinality
           } else {
             //add those literals with highest level
             var terms = cardinality.terms.sortBy(_.l.v.level).toList.reverse
-            while(watched.size != cardinality.degree.+(1).toInt) {
-              if(!watched.contains(terms.head)) {
+            while (watched.size != cardinality.degree.+(1).toInt) {
+              if (!watched.contains(terms.head)) {
                 watched += terms.head
                 terms.head.l.v.add(cardinality)
               }

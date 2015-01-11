@@ -6,7 +6,7 @@ import org.warthog.pbl.C
 /**
  * Test for PBLTerm
  */
-class PBLTermTest extends Specification{
+class PBLTermTest extends Specification {
 
   "t1" should {
     "be equal to t1" in {

@@ -66,7 +66,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     }
     solver.undo()
 
-    minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
+    minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
     this.model = Some(model)
 
     //return the optimum
@@ -80,7 +80,7 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
   def getModel = model
 
   private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
-   val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
+    val filter = function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
       !t.l.phase && model.negativeVariables.contains(PLAtom(t.l.v.name)))
     filter.map(_.a).sum
   }

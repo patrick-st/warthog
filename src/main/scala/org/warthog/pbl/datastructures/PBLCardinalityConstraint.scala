@@ -94,7 +94,7 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    if(isUnit) {
+    if (isUnit) {
       watchedLiterals.foldLeft(List[PBLLiteral]()) { (list, term) =>
         if (term.l.v.state == State.OPEN)
           list :+ term.l
@@ -107,11 +107,11 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
   }
 
   def getCurrentState: ConstraintState = {
-    if(isSat){
+    if (isSat) {
       ConstraintState.SAT
-    } else if (watchedLiterals.count(t => t.l.evaluates2True || t.l.v.state == State.OPEN) < degree){
+    } else if (watchedLiterals.count(t => t.l.evaluates2True || t.l.v.state == State.OPEN) < degree) {
       ConstraintState.EMPTY
-    } else if(isUnit){
+    } else if (isUnit) {
       ConstraintState.UNIT
     } else {
       ConstraintState.UNRESOLVED
@@ -146,6 +146,6 @@ class PBLCardinalityConstraint(var terms: List[PBLTerm], var degree: BigInt) ext
    * Checks if the constraint is satisfied or not
    * @return true if the constraint is satisfied else false
    */
-  private def isSat: Boolean =  watchedLiterals.count(_.l.evaluates2True) >= degree
+  private def isSat: Boolean = watchedLiterals.count(_.l.evaluates2True) >= degree
 }
 

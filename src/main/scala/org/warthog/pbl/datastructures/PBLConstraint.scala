@@ -29,7 +29,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    *         the watched literals are successfully initialized
    */
   def initWatchedLiterals = {
-    slack = terms.filter(! _.l.evaluates2False).map(_.a).sum - degree
+    slack = terms.filter(!_.l.evaluates2False).map(_.a).sum - degree
     currentSum = terms.filter(_.l.evaluates2True).map(_.a).sum
     //add the clause to watched lists of all variables
     terms.map(_.l.v.add(this))
@@ -55,12 +55,12 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    */
   override def updateWatchedLiterals(v: PBLVariable, value: Boolean) = {
     val changedTerm = terms.find(_.l.v == v).get
-      if (changedTerm.l.phase == value)
-        //literal evaluates to true => currentSum has to be updated
-        currentSum += changedTerm.a
-       else
-      //literal evaluates to false => slack has to be updated
-        slack -= changedTerm.a
+    if (changedTerm.l.phase == value)
+    //literal evaluates to true => currentSum has to be updated
+      currentSum += changedTerm.a
+    else
+    //literal evaluates to false => slack has to be updated
+      slack -= changedTerm.a
     //return the current state
     getCurrentState
   }
@@ -70,7 +70,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
    * @return the literals to propagate
    */
   override def getLiteralsToPropagate = {
-    if(this.isUnit) {
+    if (this.isUnit) {
       terms.foldLeft(List[PBLLiteral]()) { (list, term) =>
         if (term.l.v.state == State.OPEN && term.a > slack)
           list :+ term.l

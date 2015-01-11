@@ -9,19 +9,14 @@ import org.warthog.pbl.datastructures._
 /**
  * Tests for the PBCompetitionReader
  */
-class PBCompetitionReaderTest extends Specification{
-val hello = "hello"
+class PBCompetitionReaderTest extends Specification {
+  val hello = "hello"
+
   private def getFileString(file: String) =
     List("src", "test", "resources", "pbcompetition", file).mkString(File.separator)
 
   val correctInstance = PBCompetitionReader.readCompetitionFormat(getFileString("correctFormat.opb"))
   val incorrectInstance = PBCompetitionReader.readCompetitionFormat(getFileString("incorrectFormat.opb"))
-
-
-
-
-
-
 
 
   "correctFormat.opb" should {

@@ -6,7 +6,7 @@ import org.warthog.pbl.C
 /**
  * Test for PBLVariable
  */
-class PBLVariableTest extends Specification{
+class PBLVariableTest extends Specification {
 
   "x1" should {
     "be equal to x1" in {

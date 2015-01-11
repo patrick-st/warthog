@@ -37,7 +37,7 @@ class PBLConstraintTest extends Specification {
 
 
   "After initializing the watched literals, c1" should {
-    "have the ConstraintState SUCCESS" in{
+    "have the ConstraintState SUCCESS" in {
       val state = C.c1.initWatchedLiterals()
       state must be equalTo ConstraintState.UNRESOLVED
     }
@@ -53,7 +53,7 @@ class PBLConstraintTest extends Specification {
   val units = mutable.HashSet[Constraint]()
   "After assigning x1 to false, c1" should {
     "be unit" in {
-      C.x1.assign(false,units,1,null)
+      C.x1.assign(false, units, 1, null)
       units.contains(C.c1) must be equalTo true
     }
     "have a slack of 1" in {
@@ -66,7 +66,7 @@ class PBLConstraintTest extends Specification {
 
   "After assigning x2 to false, c1" should {
     "be empty" in {
-     C.x2.assign(false, units, 1, null) == Some(C.c1)
+      C.x2.assign(false, units, 1, null) == Some(C.c1)
     }
     "have a slack of -2" in {
       C.c1.slack must be equalTo -2

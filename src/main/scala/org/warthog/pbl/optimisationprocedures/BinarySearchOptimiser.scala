@@ -61,7 +61,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     var model: Model = null
     while (lower <= upper) {
       solver.mark()
-      if (solver.solve(List[Constraint](lowerBoundConstraint,upperBoundConstraint)) == Solver.SAT) {
+      if (solver.solve(List[Constraint](lowerBoundConstraint, upperBoundConstraint)) == Solver.SAT) {
         //update maxOptimum
         model = solver.getModel.get
         maxOptimum = evaluateObjectiveFunction(maximizeFunction.terms, model)
@@ -81,7 +81,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     }
     solver.undo()
 
-    minOptimum = evaluateObjectiveFunction(minimizeFunction,model)
+    minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
     this.model = Some(model)
 
     //return the optimum
@@ -111,7 +111,7 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
   def getModel = model
 
   private def evaluateObjectiveFunction(function: List[PBLTerm], model: Model): BigInt = {
-    val filter =  function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
+    val filter = function.filter(t => t.l.phase && model.positiveVariables.contains(PLAtom(t.l.v.name)) ||
       !t.l.phase && model.negativeVariables.contains(PLAtom(t.l.v.name)))
     filter.map(_.a).sum
   }

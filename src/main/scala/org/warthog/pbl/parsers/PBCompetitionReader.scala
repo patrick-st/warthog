@@ -113,7 +113,7 @@ object PBCompetitionReader {
       var c: Constraint = new PBLConstraint(termList, BigInt(rhs))
       c.saturation()
       //check if the constraint is cardinality after saturation
-      if(isCardinalityConstraint(c.terms))
+      if (isCardinalityConstraint(c.terms))
         c = new PBLCardinalityConstraint(c.terms, c.degree)
       c
     }
@@ -134,8 +134,8 @@ object PBCompetitionReader {
         var c: Constraint = new PBLConstraint(termList2, -BigInt(rhs))
         c.saturation()
         //check if the constraint is cardinality after saturation
-        if(isCardinalityConstraint(c.terms))
-          c = new PBLCardinalityConstraint(c.terms,c.degree)
+        if (isCardinalityConstraint(c.terms))
+          c = new PBLCardinalityConstraint(c.terms, c.degree)
         c
       }
       Some(lessOrEqualConstraint)
