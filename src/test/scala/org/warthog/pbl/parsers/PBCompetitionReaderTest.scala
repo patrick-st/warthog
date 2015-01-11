@@ -28,8 +28,8 @@ val hello = "hello"
     "contain objectiveFunction" in {
       correctInstance._2.get must be equalTo C.objectiveFunction
     }
-    "have 6 constraints" in {
-      correctInstance._1.size == 6 must be equalTo true
+    "have 7 constraints" in {
+      correctInstance._1.size == 7 must be equalTo true
     }
     "contain c1" in {
       correctInstance._1 must contain(C.c1)
@@ -48,6 +48,9 @@ val hello = "hello"
     }
     "contain c5_2" in {
       correctInstance._1 must contain(C.c5_2)
+    }
+    "contain c6" in {
+      correctInstance._1 must contain(C.c6)
     }
   }
 

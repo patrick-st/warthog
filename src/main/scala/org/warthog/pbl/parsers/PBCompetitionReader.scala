@@ -110,7 +110,12 @@ object PBCompetitionReader {
     val constraint = if (isCardinality) {
       new PBLCardinalityConstraint(termList, BigInt(rhs))
     } else {
-      new PBLConstraint(termList, BigInt(rhs))
+      var c: Constraint = new PBLConstraint(termList, BigInt(rhs))
+      c.saturation()
+      //check if the constraint is cardinality after saturation
+      if(isCardinalityConstraint(c.terms))
+        c = new PBLCardinalityConstraint(c.terms, c.degree)
+      c
     }
     //compute the <= constraint if necessary
     val option = if (equalOperator) {
@@ -126,7 +131,12 @@ object PBCompetitionReader {
       val lessOrEqualConstraint = if (isCardinality) {
         new PBLCardinalityConstraint(termList2, -BigInt(rhs))
       } else {
-        new PBLConstraint(termList2, -BigInt(rhs))
+        var c: Constraint = new PBLConstraint(termList2, -BigInt(rhs))
+        c.saturation()
+        //check if the constraint is cardinality after saturation
+        if(isCardinalityConstraint(c.terms))
+          c = new PBLCardinalityConstraint(c.terms,c.degree)
+        c
       }
       Some(lessOrEqualConstraint)
     } else {
