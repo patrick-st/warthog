@@ -38,7 +38,7 @@ class PBLCardinalityConstraintTest extends Specification {
 
   "After initializing the watched literals, c2" should {
     "have the ConstraintState SUCCESS" in {
-      val state = C.c2.initWatchedLiterals()
+      val state = C.c2.initWatchedLiterals
       state must be equalTo ConstraintState.UNRESOLVED
     }
     "watch literal l1" in {
@@ -84,19 +84,19 @@ class PBLCardinalityConstraintTest extends Specification {
 
   "After initializing the watched literals, emptyCardinalityConstraint" should {
     "be empty" in {
-      C.emptyCardinalityConstraint.initWatchedLiterals() must be equalTo ConstraintState.EMPTY
+      C.emptyCardinalityConstraint.initWatchedLiterals must be equalTo ConstraintState.EMPTY
     }
   }
 
   "After initializing the watched literals, unitCardinalityConstraint" should {
     "be unit" in {
-      C.unitCardinalityConstraint.initWatchedLiterals() must be equalTo ConstraintState.UNIT
+      C.unitCardinalityConstraint.initWatchedLiterals must be equalTo ConstraintState.UNIT
     }
   }
 
   "After initializing the watched literals, unitCardinalityConstraint" should {
     "be sat" in {
-      C.satCardinalityConstraint.initWatchedLiterals() must be equalTo ConstraintState.SAT
+      C.satCardinalityConstraint.initWatchedLiterals must be equalTo ConstraintState.SAT
     }
   }
 

@@ -38,7 +38,7 @@ class PBLConstraintTest extends Specification {
 
   "After initializing the watched literals, c1" should {
     "have the ConstraintState SUCCESS" in {
-      val state = C.c1.initWatchedLiterals()
+      val state = C.c1.initWatchedLiterals
       state must be equalTo ConstraintState.UNRESOLVED
     }
     "have an initial slack of 5" in {
@@ -78,19 +78,19 @@ class PBLConstraintTest extends Specification {
 
   "After initializing the watched literals, emptyConstraint" should {
     "be empty" in {
-      C.emptyConstraint.initWatchedLiterals() must be equalTo ConstraintState.EMPTY
+      C.emptyConstraint.initWatchedLiterals must be equalTo ConstraintState.EMPTY
     }
   }
 
   "After initializing the watched literals, unitConstraint" should {
     "be unit" in {
-      C.unitConstraint.initWatchedLiterals() must be equalTo ConstraintState.UNIT
+      C.unitConstraint.initWatchedLiterals must be equalTo ConstraintState.UNIT
     }
   }
 
   "After initializing the watched literals, unitConstraint" should {
     "be sat" in {
-      C.satConstraint.initWatchedLiterals() must be equalTo ConstraintState.SAT
+      C.satConstraint.initWatchedLiterals must be equalTo ConstraintState.SAT
     }
   }
 }
