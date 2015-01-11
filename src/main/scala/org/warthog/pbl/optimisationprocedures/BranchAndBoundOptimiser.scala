@@ -196,11 +196,7 @@ class BranchAndBoundOptimiser extends OptimisationProcedure {
     }
     //set the new level
     this.level = level
-    /* Update all PBLConstraints
-    * Not sure if this has to be done right here or could be done while computing the learned clause.
-    * The problem is if you want to learn PBLConstraints you need the slack under the current assignment.
-    * Updating the slack while computing the learned clause would lead to problems (in my opinion)
-    */
+    // Update all PBLConstraints
     constraints.map { c =>
       if (c.isInstanceOf[PBLConstraint]) {
         //update slack and currentSum
