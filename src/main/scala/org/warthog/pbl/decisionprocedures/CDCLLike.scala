@@ -349,6 +349,7 @@ class CDCLLike extends DecisionProcedure {
     }
   }
 
+
   /**
    * Method computes the watched literals of the new learned clause.
    * @param c the new learned clause
@@ -364,30 +365,19 @@ class CDCLLike extends DecisionProcedure {
           cardinality.terms.copyToBuffer(watched)
           watched.map(_.l.v.add(cardinality))
         } else {
-          //set the literals which will be forced after backtracking
+          //set all literals which evaluate to true or are open
           for (t <- cardinality.terms) {
-            if (t.l.v.level == level) {
+            if (!t.l.evaluates2False && BigInt(watched.size) < cardinality.degree.+(1)) {
               watched += t
               t.l.v.add(cardinality)
             }
           }
           //set the rest of the literals
-          //case clause
-          if (cardinality.degree == BigInt(1)) {
-            val t = cardinality.terms.find(_.l.v.level == backtrackLevel).get
-            watched += t
-            t.l.v.add(cardinality)
-            //case cardinality
-          } else {
-            //add those literals with highest level
-            var terms = cardinality.terms.sortBy(_.l.v.level).toList.reverse
-            while (watched.size != cardinality.degree.+(1).toInt) {
-              if (!watched.contains(terms.head)) {
-                watched += terms.head
-                terms.head.l.v.add(cardinality)
-              }
-              terms = terms.tail
-            }
+          var terms = cardinality.terms.diff(watched).sortBy(_.l.v.level).reverse
+          while (BigInt(watched.size) < cardinality.degree.+(1)) {
+            watched += terms.head
+            terms.head.l.v.add(cardinality)
+            terms = terms.tail
           }
         }
         //set the computed watched literals and return the constraint
