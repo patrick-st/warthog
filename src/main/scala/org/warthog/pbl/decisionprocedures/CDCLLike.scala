@@ -359,7 +359,7 @@ class CDCLLike extends DecisionProcedure {
     c match {
       case cardinality: PBLCardinalityConstraint =>
         val watched = new ArrayBuffer[PBLTerm](math.min(cardinality.terms.size, cardinality.degree.+(1).toInt))
-        if (BigInt(cardinality.terms.size) == cardinality.degree) {
+        if (BigInt(cardinality.terms.size) <= cardinality.degree) {
           //all literals have to be watched
           cardinality.terms.copyToBuffer(watched)
           watched.map(_.l.v.add(cardinality))
