@@ -44,7 +44,7 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
     if (currentSum >= degree || slack < 0)
       false
     else
-      terms.exists(_.a > slack)
+      terms.exists(t => t.l.v.state == State.OPEN && t.a > slack)
   }
 
   /**
