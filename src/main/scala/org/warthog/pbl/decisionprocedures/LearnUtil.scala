@@ -49,16 +49,16 @@ object LearnUtil {
   private def learn(reduce1: (Constraint, PBLVariable) => Constraint,
                     reduce2: (Constraint, Constraint, PBLVariable) => Constraint,
                     resolve: (Constraint, Constraint, PBLVariable) => Constraint,
-                    conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): Constraint = {
+                    conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): (Constraint, Option[Int]) = {
 
     var c1 = conflict
     //resolve the conflict until the resolvent is 1UIP
     while (stack.nonEmpty) {
       val v = stack.pop()
       //if no resolve step is possible return the computed constraint
-      if (v.reason == null || stack.isEmpty) {
+      if (v.reason == null) {
         v.unassign()
-        return c1
+        return (c1,None)
       }
       c1 = reduce1(c1, v)
       if (isResolvable(c1, v.reason, v)) {
@@ -66,11 +66,13 @@ object LearnUtil {
         c1 = resolve(c1, c2, v)
       }
       v.unassign()
-      if (is1UIP(c1, level)) {
-        return c1
+      is1UIP(c1,level) match {
+        case Some(unitLevel) => return (c1, Some(unitLevel))
+        case None =>
       }
+
     }
-    null
+    (c1,None)
   }
 
   /**
@@ -243,17 +245,46 @@ object LearnUtil {
     (lcd / a1, lcd / a2)
   }
 
+
   /**
    * Check if the given constraint is 1UIP or not
-   * @param c1
-   * @param level
+   * @param c1 the constraint to check
+   * @param level the current decision level
    * @return
    */
-  private def is1UIP(c1: Constraint, level: Int) = {
+  private def is1UIP(c1: Constraint, level: Int): Option[Int] = {
+    var decisionLevel = level
     c1 match {
-      case cardinality: PBLCardinalityConstraint =>
-        BigInt(cardinality.terms.count(_.l.v.level == level)) == cardinality.degree
-      case c: PBLConstraint => c.terms.count(_.l.v.level == level) == 1
+      case cardinality: PBLCardinalityConstraint => {
+        while(decisionLevel != 0){
+          val futureUnitTerms = cardinality.terms.count(_.l.v.level >= level)
+          val trueTerms = cardinality.terms.count(t => t.l.v.level < level && t.l.evaluates2True)
+          if(BigInt(futureUnitTerms) == cardinality.degree && trueTerms == 0) {
+            return Some(decisionLevel)
+          }
+          decisionLevel -= 1
+        }
+        None
+      }
+      case c: PBLConstraint => {
+        var listUnitLevels = List[Int]()
+        val copiedTerms = c.terms.map(_.copy)
+        while(decisionLevel != 0){
+          val partition = copiedTerms.partition(_.l.v.level >= decisionLevel)
+          val futureUnassignedTerms = partition._1
+          val fixTerms = partition._2
+          val futureSlack = fixTerms.filter(!_.l.evaluates2False).map(_.a).sum + futureUnassignedTerms.map(_.a).sum - c.degree
+          if(futureSlack >= 0 && copiedTerms.exists(t => t.l.v.state == State.OPEN && t.a > futureSlack)){
+            listUnitLevels :+= decisionLevel
+          }
+          decisionLevel -= 1
+        }
+        if(listUnitLevels.isEmpty)
+          None
+        else
+          Some(listUnitLevels.min)
+      }
+
     }
   }
 }
