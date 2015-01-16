@@ -263,7 +263,8 @@ class CDCLLike extends DecisionProcedure {
       Solver.UNSAT
     } else {
       //compute the constraint to learn
-      var learnedConstraint = LearnUtil.learnPBConstraint(emptyClause, stack, level)
+      val learnedData = LearnUtil.learnClause(emptyClause, stack, level)
+      var learnedConstraint = learnedData._1
       //add the learned clause to the constraints
       constraints :+= learnedConstraint
       //update learned clause counter
@@ -276,38 +277,36 @@ class CDCLLike extends DecisionProcedure {
       /* compute backtracking level
        * backtracking level equals second largest level of the constraint
        */
-      for (t <- learnedConstraint.terms) {
-        val level: Int = t.l.v.level
-        if (level != this.level && level > backtrackLevel) {
-          backtrackLevel = level
+      learnedData._2 match {
+        case Some(unitLevel) => {
+          //check if constraint is initial unit
+          learnedConstraint match {
+            case cardinality: PBLCardinalityConstraint =>
+              if (BigInt(cardinality.terms.size) == cardinality.degree)
+                backtrackLevel = 0
+            case constraint: PBLConstraint =>
+              val initialSlack = constraint.terms.map(_.a).sum - constraint.degree
+              if (initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
+                backtrackLevel = 0
+          }
+
+          if(backtrackLevel != 0)
+            backtrackLevel = learnedConstraint.terms.filterNot(_.l.v.level >= unitLevel).maxBy(_.l.v.level).l.v.level
         }
+        case None => backtrackLevel = 0
       }
-      //check if learned clause is initial unit
-      learnedConstraint match {
-        case cardinality: PBLCardinalityConstraint =>
-          if (BigInt(cardinality.terms.size) == cardinality.degree)
-            backtrackLevel = 0
-        case constraint: PBLConstraint =>
-          val initialSlack = constraint.terms.map(_.a).sum - constraint.degree
-          if (initialSlack >= 0 && constraint.terms.exists(_.a > initialSlack))
-            backtrackLevel = 0
-      }
-      learnedConstraint = setWatchedLiterals(learnedConstraint, backtrackLevel)
 
       backtrack(backtrackLevel)
+
+      learnedConstraint = setWatchedLiterals(learnedConstraint, backtrackLevel)
 
       /**
        * Only clauses will get unit after backtracking.
        * For other pb constraints you have to backtrack until the constraint is
        * unit or unresolved (success)
        */
-      if (learnedConstraint.getCurrentState == ConstraintState.EMPTY) {
-        if (backtrackLevel != 0) {
-          backtrack(0)
-        }
-        else {
+      if (learnedConstraint.getCurrentState == ConstraintState.EMPTY && backtrackLevel == 0) {
           return Solver.UNSAT
-        }
       }
       Solver.UNKNOWN
     }
@@ -386,7 +385,6 @@ class CDCLLike extends DecisionProcedure {
       case c: PBLConstraint => c.initWatchedLiterals; c
     }
   }
-
   /**
    * Method deletes the last n constraints without updating the variables.
    * Variables which only occur at the deleted constraints aren't removed
@@ -417,4 +415,5 @@ class CDCLLike extends DecisionProcedure {
     (vars diff varsOfConstraints).map(variables -= _.ID)
   }
 }
+
 
