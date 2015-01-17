@@ -10,6 +10,10 @@ import scala.collection.mutable.ListBuffer
  */
 object LearnUtil {
 
+  def learnCardinalityConstraint(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
+    learn((c: Constraint, v: PBLVariable) => c, reduce, reduceToCardinality, resolve, conflict, stack, level)
+  }
+
   /**
    * Method to learn PB Constraints
    * @param conflict to analyze
@@ -18,7 +22,7 @@ object LearnUtil {
    * @return the constraint to learn
    */
   def learnPBConstraint(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
-    learn((c: Constraint, v: PBLVariable) => c, reduce, resolve, conflict, stack, level)
+    learn((c: Constraint, v: PBLVariable) => c, reduce, identity, resolve, conflict, stack, level)
   }
 
   /**
@@ -29,7 +33,7 @@ object LearnUtil {
    * @return the clause to learn
    */
   def learnClause(conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int) = {
-    learn(reduce2Clause, reduce2Clause, resolveClauses, conflict, stack, level)
+    learn(reduce2Clause, reduce2Clause, identity, resolveClauses, conflict, stack, level)
   }
 
   /**
@@ -48,6 +52,7 @@ object LearnUtil {
    */
   private def learn(reduce1: (Constraint, PBLVariable) => Constraint,
                     reduce2: (Constraint, Constraint, PBLVariable) => Constraint,
+                    reduce3: (Constraint) => Constraint,
                     resolve: (Constraint, Constraint, PBLVariable) => Constraint,
                     conflict: Constraint, stack: mutable.Stack[PBLVariable], level: Int): (Constraint, Option[Int]) = {
 
@@ -58,7 +63,8 @@ object LearnUtil {
       //if no resolve step is possible return the computed constraint
       if (v.reason == null) {
         v.unassign()
-        return (c1,None)
+        println("before reduction: " + c1)
+        return (reduce3(c1),None)
       }
       c1 = reduce1(c1, v)
       if (isResolvable(c1, v.reason, v)) {
@@ -67,12 +73,13 @@ object LearnUtil {
       }
       v.unassign()
       is1UIP(c1,level) match {
-        case Some(unitLevel) => return (c1, Some(unitLevel))
+        case Some(unitLevel) => println("bevore reduction: " + c1); return (reduce3(c1), Some(unitLevel))
         case None =>
       }
 
     }
-    (c1,None)
+    println("before reduction: " + c1)
+    (reduce3(c1),None)
   }
 
   /**
@@ -286,6 +293,19 @@ object LearnUtil {
       }
 
     }
+  }
+
+  private def reduceToCardinality(c: Constraint):Constraint = {
+    var cardinality: Constraint = c match {
+      case card: PBLCardinalityConstraint => card.copy
+      case constr: PBLConstraint => constr.toCardinalityConstraint
+    }
+    //check if the cadinality constraint is empty under current assignment
+    if(cardinality.getSlack >= 0 || cardinality.terms.size < cardinality.degree){
+      cardinality.terms = cardinality.terms.filter(_.l.evaluates2False)
+      cardinality.degree = 1
+    }
+    cardinality
   }
 }
 

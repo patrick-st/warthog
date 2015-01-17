@@ -263,7 +263,7 @@ class CDCLLike extends DecisionProcedure {
       Solver.UNSAT
     } else {
       //compute the constraint to learn
-      val learnedData = LearnUtil.learnClause(emptyClause, stack, level)
+      val learnedData = LearnUtil.learnCardinalityConstraint(emptyClause, stack, level)
       var learnedConstraint = learnedData._1
       //add the learned clause to the constraints
       constraints :+= learnedConstraint
