@@ -63,7 +63,6 @@ object LearnUtil {
       //if no resolve step is possible return the computed constraint
       if (v.reason == null) {
         v.unassign()
-        println("before reduction: " + c1)
         return (reduce3(c1),None)
       }
       c1 = reduce1(c1, v)
@@ -73,12 +72,11 @@ object LearnUtil {
       }
       v.unassign()
       is1UIP(c1,level) match {
-        case Some(unitLevel) => println("bevore reduction: " + c1); return (reduce3(c1), Some(unitLevel))
+        case Some(unitLevel) => return (reduce3(c1), Some(unitLevel))
         case None =>
       }
 
     }
-    println("before reduction: " + c1)
     (reduce3(c1),None)
   }
 
