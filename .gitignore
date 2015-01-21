@@ -3,3 +3,4 @@ target
 warthog.iml
 .idea
 .idea_modules
+src/test/resources/pbl/benchmark_instances/*
