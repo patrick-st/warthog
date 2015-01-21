@@ -19,7 +19,7 @@ class CDCLLikeTest extends Specification {
     List("src", "test", "resources", "dimacs", file).mkString(File.separator)
 
   private def getPBFileString(file: String) =
-    List("src", "test", "resources", "pbcompetition", file).mkString(File.separator)
+    List("src", "test", "resources", "pbl", "opb", file).mkString(File.separator)
 
 
   val solver = new CDCLLike()
