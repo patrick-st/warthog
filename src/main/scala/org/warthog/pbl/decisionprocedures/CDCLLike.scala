@@ -9,7 +9,7 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 /**
  * Implements a CDCL like approach to solve pseudo-boolean constraints
  */
-class CDCLLike extends DecisionProcedure {
+class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
   var variables = mutable.HashMap[Int, PBLVariable]()
   var constraints = List[Constraint]()
   var level = 0
@@ -263,7 +263,11 @@ class CDCLLike extends DecisionProcedure {
       Solver.UNSAT
     } else {
       //compute the constraint to learn
-      val learnedData = LearnUtil.learnClause(emptyClause, stack, level)
+      val learnedData =  learnMethod match {
+        case LearnMethod.ClauseLearning => LearnUtil.learnClause(emptyClause, stack, level)
+        case LearnMethod.CardinalityLearning => LearnUtil.learnCardinalityConstraint(emptyClause, stack, level)
+        case LearnMethod.PBConstraintLearning => LearnUtil.learnPBConstraint(emptyClause, stack, level)
+      }
       var learnedConstraint = learnedData._1
       //add the learned clause to the constraints
       constraints :+= learnedConstraint
@@ -414,6 +418,11 @@ class CDCLLike extends DecisionProcedure {
     //delete all variables which occur only at the deleted constraints
     (vars diff varsOfConstraints).map(variables -= _.ID)
   }
+}
+
+object LearnMethod extends Enumeration {
+  type LearnMethod = Value
+  val ClauseLearning, PBConstraintLearning, CardinalityLearning = Value
 }
 
 
