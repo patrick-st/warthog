@@ -22,7 +22,7 @@ class CDCLLikeTest extends Specification {
     List("src", "test", "resources", "pbl", "opb", file).mkString(File.separator)
 
 
-  val solver = new CDCLLike()
+  val solver = new CDCLLike(LearnMethod.ClauseLearning)
 
   "Satisfiability of simple dimacs formulas" should {
     "be true for formula oneClauseFormula" in {
@@ -72,7 +72,7 @@ class CDCLLikeTest extends Specification {
     }
     "be false for formula f08" in {
       val instance = DIMACSReader.dimacs2PBConstraints(getDIMACSFileString("f08.cnf"))
-      val solver = new CDCLLike
+      val solver = new CDCLLike(LearnMethod.ClauseLearning)
       solver.solve(instance._1) == Solver.UNSAT
     }
     "be false for formula f09" in {
