@@ -81,9 +81,10 @@ class BinarySearchOptimiser(val solver: DecisionProcedure) extends OptimisationP
     }
     solver.undo()
 
-    minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
-    this.model = Some(model)
-
+    if(model != null) {
+      minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
+      this.model = Some(model)
+    }
     //return the optimum
     if (minOptimum == null) {
       None

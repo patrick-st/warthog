@@ -66,8 +66,10 @@ class LinearOptimiser(val solver: DecisionProcedure) extends OptimisationProcedu
     }
     solver.undo()
 
-    minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
-    this.model = Some(model)
+    if(model != null) {
+      minOptimum = evaluateObjectiveFunction(minimizeFunction, model)
+      this.model = Some(model)
+    }
 
     //return the optimum
     if (minOptimum == null) {
