@@ -67,7 +67,7 @@ object Main {
       "instance_0008.wcnf",
       "instance_0009.wcnf"
     )
-    val optimiser = Optimiser.BinaryMaxSAT
+    val optimiser = Optimiser.WPM1
     val learnMethod = null
     //destination to write result file
     val destination = "C:" + fs + "Users" + fs + "Patrick" + fs + "Desktop" + fs + "Masterarbeit" + fs + "Benchmark" + fs + "results" + fs + subdirectory + fs + optimiser +"_" + learnMethod + ".csv"

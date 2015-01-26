@@ -11,7 +11,7 @@ import org.warthog.pbl.parsers.PBCompetitionReader
 import org.warthog.pl.datastructures.cnf.ImmutablePLClause
 import org.warthog.pl.decisionprocedures.satsolver.impl.picosat.Picosat
 import org.warthog.pl.generators.pbc.BailleuxBoufkhadRoussel
-import org.warthog.pl.optimization.maxsat.partialWeighted.{BinarySearch, PartialWeightedMaxSATSolver, LinearSearch}
+import org.warthog.pl.optimization.maxsat.partialWeighted.{WPM1, BinarySearch, PartialWeightedMaxSATSolver, LinearSearch}
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
 
 import scala.collection.mutable
@@ -40,6 +40,7 @@ class Benchmark(val path: String, opt: Optimiser.Value, learnMethod: LearnMethod
       case Optimiser.BranchAndBoundPBO => executePBLOptimiser(new BranchAndBoundOptimiser)
       case Optimiser.LinearMaxSAT => executeMaxSATOptimiser(new LinearSearch(new Picosat(), BailleuxBoufkhadRoussel))
       case Optimiser.BinaryMaxSAT => executeMaxSATOptimiser(new BinarySearch(new Picosat(), BailleuxBoufkhadRoussel))
+      case Optimiser.WPM1 => executeMaxSATOptimiser(new WPM1(new Picosat()))
     }
   }
 
@@ -137,6 +138,6 @@ class Benchmark(val path: String, opt: Optimiser.Value, learnMethod: LearnMethod
 
 object Optimiser extends Enumeration {
   type Optimiser = Value
-  val LinearPBO, BinaryPBO, BranchAndBoundPBO, LinearMaxSAT, BinaryMaxSAT = Value
+  val LinearPBO, BinaryPBO, BranchAndBoundPBO, LinearMaxSAT, BinaryMaxSAT, WPM1 = Value
 }
 
