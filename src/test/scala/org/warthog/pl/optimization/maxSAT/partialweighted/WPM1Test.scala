@@ -27,14 +27,13 @@ package org.warthog.pl.optimization.maxsat.partialweighted
 
 import org.specs2.mutable.Specification
 import java.io.File
-import org.warthog.pl.optimization.maxsat.partialWeighted.{BinarySearch, PartialWeightedMaxSATSolver}
+import org.warthog.pl.optimization.maxsat.partialWeighted.{WPM1, LinearSearch, PartialWeightedMaxSATSolver}
 import org.warthog.pl.parsers.maxsat.PartialWeightedMaxSATReader
-import org.warthog.pl.decisionprocedures.satsolver.Solver
 import org.warthog.pl.decisionprocedures.satsolver.impl.picosat.Picosat
-import org.warthog.pl.generators.pbc.{BailleuxBoufkhadRoussel, BailleuxBoufkhadRousselTest}
+import org.warthog.pl.generators.pbc.BailleuxBoufkhadRoussel
 import org.warthog.pl.optimization.maxsat.MaxSATHelper
 
-class BinarySearchTest extends Specification {
+class WPM1Test extends Specification {
   /*
    * By default, tests are executed concurrently. JNI/JNA, however, is able to load _only one_ instance of
    * (lib)picosat.{so,dylib,dll} per JVM so concurrently accessing the picosat INSTANCE will result in double
@@ -43,7 +42,7 @@ class BinarySearchTest extends Specification {
   args(sequential = true)
 
   val fs = System.getProperty("file.separator")
-  val solver = new BinarySearch(new Picosat(), BailleuxBoufkhadRoussel)
+  val solver = new WPM1(new Picosat())
 
   private def getFileString(folder: String, subFolder: String, file: String) =
     List("src", "test", "resources", folder, subFolder, file).mkString(File.separator)
