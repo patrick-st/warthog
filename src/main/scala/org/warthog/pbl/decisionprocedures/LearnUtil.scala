@@ -62,7 +62,7 @@ object LearnUtil {
       val v = stack.pop()
       //if no resolve step is possible return the computed constraint
       if (v.reason == null) {
-        v.unassign()
+        stack.push(v)
         return (reduce3(c1),None)
       }
       c1 = reduce1(c1, v)
@@ -223,15 +223,22 @@ object LearnUtil {
         case None => c1_.terms :+= t
       }
     }
-    //check if constraint is cardinality or not
-    if (c1_.terms.forall(_.a.abs == c1_.terms(0).a.abs))
-      new PBLCardinalityConstraint(c1_.terms, c1_.degree + c2_.degree)
-    else {
-      var c: Constraint = new PBLConstraint(c1_.terms, c1_.degree + c2_.degree)
-      c.saturation()
-      if (c.terms.forall(_.a.abs == c.terms(0).a.abs))
-        c = new PBLCardinalityConstraint(c.terms, c.degree)
-      c
+    if(c1_.terms.isEmpty) {
+      //it can happen that an empty constraint will be computed
+      //if an empty constraint is computed generate an empty CardinalityConstraint
+      val term = new PBLTerm(1,new PBLLiteral(c1.terms(0).l.v))
+      new PBLCardinalityConstraint(List[PBLTerm](term),BigInt(2))
+    } else {
+      //check if constraint is cardinality or not
+      if (c1_.terms.forall(_.a.abs == c1_.terms(0).a.abs))
+        new PBLCardinalityConstraint(c1_.terms, c1_.degree + c2_.degree)
+      else {
+        var c: Constraint = new PBLConstraint(c1_.terms, c1_.degree + c2_.degree)
+        c.saturation()
+        if (c.terms.forall(_.a.abs == c.terms(0).a.abs))
+          c = new PBLCardinalityConstraint(c.terms, c.degree)
+        c
+      }
     }
   }
 
@@ -255,34 +262,63 @@ object LearnUtil {
    * Check if the given constraint is 1UIP or not
    * @param c1 the constraint to check
    * @param level the current decision level
-   * @return
+   * @return Some(backtrackLevel) where the constraint is unit or None if the constraint is not unit
    */
   private def is1UIP(c1: Constraint, level: Int): Option[Int] = {
-    var decisionLevel = level
+    var backtrackLevel = level-1
     c1 match {
       case cardinality: PBLCardinalityConstraint => {
-        while(decisionLevel != 0){
-          val futureUnitTerms = cardinality.terms.count(_.l.v.level >= level)
-          val trueTerms = cardinality.terms.count(t => t.l.v.level < level && t.l.evaluates2True)
-          if(BigInt(futureUnitTerms) == cardinality.degree && trueTerms == 0) {
-            return Some(decisionLevel)
+        if (cardinality.degree == BigInt(1)) {
+          //case clause:
+          if(cardinality.terms.count(_.l.v.level == level) == 1) {
+            //check if constraint is initial unit
+            if (cardinality.terms.size == 1)
+              return Some(0)
+            Some(cardinality.terms.sortBy(_.l.v.level).reverse.tail.head.l.v.level)
+          } else None
+        } else {
+          //case cardinality constraint
+          var possibleBacktrackLevel: List[Int] = c1.terms.map(_.l.v.level).:+(0).distinct.filter(_ != -1).sorted.reverse
+          if(possibleBacktrackLevel.head == level)
+            possibleBacktrackLevel = possibleBacktrackLevel.tail
+
+          while (possibleBacktrackLevel.nonEmpty) {
+            backtrackLevel = possibleBacktrackLevel.head
+            val levelPartition = cardinality.terms.partition(t => t.l.v.level > backtrackLevel || t.l.v.state == State.OPEN)
+            //number of open variables after backtracking
+            val numberOfOpenTerms = levelPartition._1.size
+
+            val evaluatesPartition = levelPartition._2.partition(_.l.evaluates2False)
+            //number of false terms after backtracking
+            val falseTerms = evaluatesPartition._1
+            //number of true terms after backtracking
+            val numberOfTrueTerms = evaluatesPartition._2.size
+            if ((BigInt(numberOfOpenTerms) + BigInt(numberOfTrueTerms)) == cardinality.degree && falseTerms.exists(_.l.v.level == backtrackLevel)) {
+              return Some(backtrackLevel)
+            }
+            possibleBacktrackLevel = possibleBacktrackLevel.tail
           }
-          decisionLevel -= 1
+          None
         }
-        None
       }
       case c: PBLConstraint => {
+        var possibleBacktrackLevel: List[Int] = c1.terms.map(_.l.v.level).:+(0).distinct.filter(_ != -1).sorted.reverse
+        if(possibleBacktrackLevel.head == level)
+          possibleBacktrackLevel = possibleBacktrackLevel.tail
+
+        //collect alle level where the constraint is unit
         var listUnitLevels = List[Int]()
         val copiedTerms = c.terms.map(_.copy)
-        while(decisionLevel != 0){
-          val partition = copiedTerms.partition(_.l.v.level >= decisionLevel)
+        while(possibleBacktrackLevel.nonEmpty){
+          backtrackLevel = possibleBacktrackLevel.head
+          val partition = copiedTerms.partition(_.l.v.level > backtrackLevel)
           val futureUnassignedTerms = partition._1
           val fixTerms = partition._2
           val futureSlack = fixTerms.filter(!_.l.evaluates2False).map(_.a).sum + futureUnassignedTerms.map(_.a).sum - c.degree
           if(futureSlack >= 0 && copiedTerms.exists(t => t.l.v.state == State.OPEN && t.a > futureSlack)){
-            listUnitLevels :+= decisionLevel
+            listUnitLevels :+= backtrackLevel
           }
-          decisionLevel -= 1
+          possibleBacktrackLevel = possibleBacktrackLevel.tail
         }
         if(listUnitLevels.isEmpty)
           None
@@ -294,12 +330,13 @@ object LearnUtil {
   }
 
   private def reduceToCardinality(c: Constraint):Constraint = {
-    var cardinality: Constraint = c match {
+    val cardinality: Constraint = c match {
       case card: PBLCardinalityConstraint => card.copy
       case constr: PBLConstraint => constr.toCardinalityConstraint
     }
-    //check if the cadinality constraint is empty under current assignment
-    if(cardinality.getSlack >= 0 || cardinality.terms.size < cardinality.degree){
+    //check if the cardinality constraint is not empty under current assignment
+    if(cardinality.getSlack >= 0){
+      //if cardinality is not empty reduce the constraint to clause
       cardinality.terms = cardinality.terms.filter(_.l.evaluates2False)
       cardinality.degree = 1
     }
