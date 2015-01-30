@@ -236,6 +236,7 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
               l.v.assign(true, units, level, unit)
             else
               l.v.assign(false, units, level, unit)
+
           stack.push(l.v)
           conflict match {
             //return the conflict if one occurs
@@ -263,7 +264,7 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
       Solver.UNSAT
     } else {
       //compute the constraint to learn
-      val learnedData =  learnMethod match {
+      val learnedData = learnMethod match {
         case LearnMethod.ClauseLearning => LearnUtil.learnClause(emptyClause, stack, level)
         case LearnMethod.CardinalityLearning => LearnUtil.learnCardinalityConstraint(emptyClause, stack, level)
         case LearnMethod.PBConstraintLearning => LearnUtil.learnPBConstraint(emptyClause, stack, level)
@@ -282,7 +283,7 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
        * backtracking level equals second largest level of the constraint
        */
       learnedData._2 match {
-        case Some(unitLevel) => {
+        case Some(computedBacktrackLevel) => {
           //check if constraint is initial unit
           learnedConstraint match {
             case cardinality: PBLCardinalityConstraint =>
@@ -294,8 +295,9 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
                 backtrackLevel = 0
           }
 
-          if(backtrackLevel != 0)
-            backtrackLevel = learnedConstraint.terms.filterNot(_.l.v.level >= unitLevel).maxBy(_.l.v.level).l.v.level
+          if (backtrackLevel != 0) {
+            backtrackLevel = computedBacktrackLevel
+          }
         }
         case None => backtrackLevel = 0
       }
@@ -310,7 +312,7 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
        * unit or unresolved (success)
        */
       if (learnedConstraint.getCurrentState == ConstraintState.EMPTY && backtrackLevel == 0) {
-          return Solver.UNSAT
+        return Solver.UNSAT
       }
       Solver.UNKNOWN
     }
@@ -389,6 +391,7 @@ class CDCLLike(learnMethod: LearnMethod.Value) extends DecisionProcedure {
       case c: PBLConstraint => c.initWatchedLiterals; c
     }
   }
+
   /**
    * Method deletes the last n constraints without updating the variables.
    * Variables which only occur at the deleted constraints aren't removed
