@@ -113,11 +113,14 @@ class PBLConstraint(var terms: List[PBLTerm], var degree: BigInt) extends Constr
     //k is the degree of the cardinality constraint
     var k = 0
     var s: BigInt = 0
-    while (s < degree) {
+    while (s < degree && sortedTerms.nonEmpty) {
       s += sortedTerms.head.a
       sortedTerms = sortedTerms.tail
       k += 1
     }
+    //if the PBLConstraint is empty the PBLCardinlaityConstraint has to be empty to
+    if(s < degree)
+      k = terms.size + 1
     //copy the terms and exchange the coefficients
     val cardinalityTerms: List[PBLTerm] = terms.foldLeft(List[PBLTerm]())(_ :+ _.copy)
     cardinalityTerms.map(_.a = BigInt(1))
